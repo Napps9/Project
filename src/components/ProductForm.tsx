@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import IngredientRow from './IngredientRow';
+import IngredientPasteInput, { ParsedIngredientState } from './IngredientPasteInput';
 import ScoreResult, { ScoreResultData } from './ScoreResult';
 
 interface NutritionData {
@@ -11,11 +11,6 @@ interface NutritionData {
   sodiumMg: number;
   fibreAoacG: number;
   proteinG: number;
-}
-
-interface IngredientInput {
-  name: string;
-  proportion: number;
 }
 
 const emptyNutrition: NutritionData = {
@@ -30,9 +25,7 @@ const emptyNutrition: NutritionData = {
 export default function ProductForm() {
   const [isDrink, setIsDrink] = useState(false);
   const [nutrition, setNutrition] = useState<NutritionData>(emptyNutrition);
-  const [ingredients, setIngredients] = useState<IngredientInput[]>([
-    { name: '', proportion: 0 },
-  ]);
+  const [ingredients, setIngredients] = useState<ParsedIngredientState[]>([]);
   const [result, setResult] = useState<ScoreResultData | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,35 +34,23 @@ export default function ProductForm() {
     setNutrition((prev) => ({ ...prev, [field]: parseFloat(value) || 0 }));
   };
 
-  const updateIngredient = (index: number, field: 'name' | 'proportion', value: string) => {
-    setIngredients((prev) =>
-      prev.map((ing, i) =>
-        i === index
-          ? { ...ing, [field]: field === 'proportion' ? parseFloat(value) || 0 : value }
-          : ing
-      )
-    );
-  };
-
-  const addIngredient = () => {
-    setIngredients((prev) => [...prev, { name: '', proportion: 0 }]);
-  };
-
-  const removeIngredient = (index: number) => {
-    setIngredients((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const totalProportion = ingredients.reduce((sum, ing) => sum + ing.proportion, 0);
-
   const handleScore = async () => {
     setError('');
     setLoading(true);
     try {
+      // Calculate FVN percentage client-side, applying user overrides for unknown items
       const validIngredients = ingredients.filter((i) => i.name.trim());
+      const fvnPercentage = Math.min(
+        validIngredients
+          .filter((ing) => ing.isFvn || ing.userOverrideFvn)
+          .reduce((sum, ing) => sum + ing.proportion, 0),
+        100
+      );
+
       const res = await fetch('/api/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nutrition, ingredients: validIngredients, isDrink }),
+        body: JSON.stringify({ nutrition, fvnPercentage, isDrink }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -111,34 +92,11 @@ export default function ProductForm() {
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-700">
-            Ingredients
-            <span className="font-normal text-gray-400 ml-1">(for automatic FVN % calculation)</span>
-          </h3>
-          <span className={`text-xs ${Math.abs(totalProportion - 100) < 0.1 ? 'text-green-600' : 'text-amber-600'}`}>
-            Total: {totalProportion.toFixed(1)}%
-          </span>
-        </div>
-        <div className="space-y-2">
-          {ingredients.map((ing, i) => (
-            <IngredientRow
-              key={i}
-              index={i}
-              name={ing.name}
-              proportion={ing.proportion}
-              onChange={updateIngredient}
-              onRemove={removeIngredient}
-            />
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={addIngredient}
-          className="mt-2 text-sm text-blue-600 hover:text-blue-800"
-        >
-          + Add ingredient
-        </button>
+        <h3 className="text-sm font-medium text-gray-700 mb-3">
+          Ingredients
+          <span className="font-normal text-gray-400 ml-1">(paste comma-separated list for automatic FVN classification)</span>
+        </h3>
+        <IngredientPasteInput ingredients={ingredients} onChange={setIngredients} />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

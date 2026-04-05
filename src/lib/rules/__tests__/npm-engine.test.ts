@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calculatePoints, calculateAPoints, calculateCPoints, calculateFvnPoints } from '../nutrient-scorer';
 import { calculateNpmScore, calculateNpmScoreFromFvn } from '../npm-engine';
-import { classifyIngredient, calculateFvnFromIngredients } from '../fvn-classifier';
+import { classifyIngredient, calculateFvnFromIngredients, parseAndClassifyIngredients } from '../fvn-classifier';
 import { NutritionData } from '../../types';
 
 // ── Generic point calculator ──
@@ -285,5 +285,104 @@ describe('calculateNpmScoreFromFvn', () => {
     expect(result.fvnPercentage).toBe(50);
     expect(result.cPoints.fruitVegNuts).toBe(1); // >40%
     expect(typeof result.totalScore).toBe('number');
+  });
+});
+
+// ── Three-state recognition ──
+
+describe('classifyIngredient recognition', () => {
+  it('returns recognized_fvn for known FVN ingredients', () => {
+    expect(classifyIngredient('Apple').recognition).toBe('recognized_fvn');
+    expect(classifyIngredient('Carrot').recognition).toBe('recognized_fvn');
+    expect(classifyIngredient('Almonds').recognition).toBe('recognized_fvn');
+    expect(classifyIngredient('Chickpeas').recognition).toBe('recognized_fvn');
+  });
+
+  it('returns recognized_non_fvn for known excluded ingredients', () => {
+    expect(classifyIngredient('Sugar').recognition).toBe('recognized_non_fvn');
+    expect(classifyIngredient('Wheat Flour').recognition).toBe('recognized_non_fvn');
+    expect(classifyIngredient('Butter').recognition).toBe('recognized_non_fvn');
+    expect(classifyIngredient('Chicken').recognition).toBe('recognized_non_fvn');
+    expect(classifyIngredient('Rice').recognition).toBe('recognized_non_fvn');
+  });
+
+  it('returns unrecognized for unknown ingredients', () => {
+    expect(classifyIngredient('Xanthan Gum').recognition).toBe('unrecognized');
+    expect(classifyIngredient('E471').recognition).toBe('unrecognized');
+    expect(classifyIngredient('Modified Starch').recognition).toBe('unrecognized');
+    expect(classifyIngredient('Acidity Regulator').recognition).toBe('unrecognized');
+  });
+});
+
+// ── Ingredient parsing ──
+
+describe('parseAndClassifyIngredients', () => {
+  it('splits comma-separated ingredients', () => {
+    const result = parseAndClassifyIngredients('tomatoes, sugar, almonds');
+    expect(result).toHaveLength(3);
+    expect(result[0].name).toBe('tomatoes');
+    expect(result[1].name).toBe('sugar');
+    expect(result[2].name).toBe('almonds');
+  });
+
+  it('classifies each parsed ingredient', () => {
+    const result = parseAndClassifyIngredients('tomatoes, sugar, almonds');
+    expect(result[0].recognition).toBe('recognized_fvn');
+    expect(result[0].isFvn).toBe(true);
+    expect(result[1].recognition).toBe('recognized_non_fvn');
+    expect(result[1].isFvn).toBe(false);
+    expect(result[2].recognition).toBe('recognized_fvn');
+    expect(result[2].isFvn).toBe(true);
+  });
+
+  it('flags unknown ingredients', () => {
+    const result = parseAndClassifyIngredients('tomatoes, xanthan gum, E471');
+    expect(result[1].recognition).toBe('unrecognized');
+    expect(result[2].recognition).toBe('unrecognized');
+  });
+
+  it('extracts percentages from parenthetical content', () => {
+    const result = parseAndClassifyIngredients('tomatoes (40%), sugar (30%), wheat flour');
+    expect(result[0].name).toBe('tomatoes');
+    expect(result[0].proportion).toBe(40);
+    expect(result[1].name).toBe('sugar');
+    expect(result[1].proportion).toBe(30);
+    expect(result[2].proportion).toBe(0);
+  });
+
+  it('extracts standalone percentages', () => {
+    const result = parseAndClassifyIngredients('tomatoes 40%, sugar 15%');
+    expect(result[0].proportion).toBe(40);
+    expect(result[1].proportion).toBe(15);
+  });
+
+  it('strips parenthetical sub-ingredients', () => {
+    const result = parseAndClassifyIngredients('chocolate (cocoa mass, sugar), tomatoes');
+    expect(result[0].name).toBe('chocolate');
+    expect(result[1].name).toBe('tomatoes');
+  });
+
+  it('handles extra whitespace and empty entries', () => {
+    const result = parseAndClassifyIngredients('  tomatoes ,  , sugar  ,  ');
+    expect(result).toHaveLength(2);
+    expect(result[0].name).toBe('tomatoes');
+    expect(result[1].name).toBe('sugar');
+  });
+
+  it('handles a real-world ingredient list', () => {
+    const result = parseAndClassifyIngredients(
+      'Wheat Flour, Sugar, Palm Oil, Cocoa Powder, Raisins (8%), Salt, Raising Agent (E500), Flavouring'
+    );
+    expect(result.length).toBeGreaterThanOrEqual(7);
+    // Raisins should be FVN with 8% proportion
+    const raisins = result.find((r) => r.name.toLowerCase().includes('raisin'));
+    expect(raisins?.isFvn).toBe(true);
+    expect(raisins?.proportion).toBe(8);
+    // Wheat Flour should be recognized_non_fvn
+    const flour = result.find((r) => r.name.toLowerCase().includes('wheat flour'));
+    expect(flour?.recognition).toBe('recognized_non_fvn');
+    // Flavouring should be unrecognized
+    const flavouring = result.find((r) => r.name.toLowerCase().includes('flavouring'));
+    expect(flavouring?.recognition).toBe('unrecognized');
   });
 });

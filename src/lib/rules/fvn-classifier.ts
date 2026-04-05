@@ -1,4 +1,4 @@
-import { FvnCategory } from '../types';
+import { FvnCategory, FvnRecognition, ParsedIngredient } from '../types';
 
 /**
  * FVN (Fruit, Vegetable & Nut) ingredient classifier.
@@ -102,23 +102,23 @@ function normalise(name: string): string {
  * Uses substring matching against the FVN keyword database.
  * Returns the category and whether it counts as FVN.
  */
-export function classifyIngredient(name: string): { isFvn: boolean; category: FvnCategory } {
+export function classifyIngredient(name: string): { isFvn: boolean; category: FvnCategory; recognition: FvnRecognition } {
   const normalised = normalise(name);
 
   // Check against exclusions first (potatoes, grains, etc.)
   if (isExcluded(normalised)) {
-    return { isFvn: false, category: 'none' };
+    return { isFvn: false, category: 'none', recognition: 'recognized_non_fvn' };
   }
 
   for (const entry of FVN_DATABASE) {
     for (const keyword of entry.keywords) {
       if (normalised.includes(keyword) || keyword.includes(normalised)) {
-        return { isFvn: true, category: entry.category };
+        return { isFvn: true, category: entry.category, recognition: 'recognized_fvn' };
       }
     }
   }
 
-  return { isFvn: false, category: 'none' };
+  return { isFvn: false, category: 'none', recognition: 'unrecognized' };
 }
 
 /** Items that look like they could match but are NOT FVN */
@@ -166,4 +166,53 @@ export function calculateFvnFromIngredients(
   });
 
   return { fvnPercentage: Math.min(fvnPercentage, 100), classifications };
+}
+
+/**
+ * Parse a comma-separated ingredient string and classify each ingredient.
+ * Handles real-world formats: strips parenthetical content, extracts embedded percentages.
+ *
+ * Examples:
+ *   "tomatoes (40%), sugar, wheat flour" →
+ *     [{ name: "tomatoes", proportion: 40, ... }, { name: "sugar", proportion: 0, ... }, ...]
+ */
+export function parseAndClassifyIngredients(rawText: string): ParsedIngredient[] {
+  // Strip parenthetical content BEFORE splitting on commas,
+  // since parentheticals may contain commas (e.g. "chocolate (cocoa mass, sugar)")
+  const stripped = rawText.replace(/\([^)]*\)/g, (match) => {
+    // Preserve percentage values from parentheticals before removing
+    const pctMatch = match.match(/(\d+(?:\.\d+)?)\s*%/);
+    return pctMatch ? ` ${pctMatch[1]}%` : '';
+  });
+
+  const parts = stripped.split(',').map((s) => s.trim()).filter(Boolean);
+
+  return parts.map((raw) => {
+    // Extract percentage if present, e.g. "tomatoes 40%" or "sugar 15%"
+    let proportion = 0;
+    const percentMatch = raw.match(/(\d+(?:\.\d+)?)\s*%/);
+    if (percentMatch) {
+      proportion = parseFloat(percentMatch[1]);
+    }
+
+    // Strip percentage annotations to get clean name
+    const name = raw
+      .replace(/\d+(?:\.\d+)?\s*%/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!name) {
+      return null;
+    }
+
+    const result = classifyIngredient(name);
+
+    return {
+      name,
+      proportion,
+      isFvn: result.isFvn,
+      category: result.category,
+      recognition: result.recognition,
+    };
+  }).filter((item): item is ParsedIngredient => item !== null);
 }

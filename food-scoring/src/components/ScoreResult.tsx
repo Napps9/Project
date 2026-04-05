@@ -1,8 +1,33 @@
-import { ScoreResult as ScoreResultType } from '../types';
 import ScoreBadge from './ScoreBadge';
 
+interface APointsBreakdown {
+  energy: number;
+  saturatedFat: number;
+  sugar: number;
+  sodium: number;
+  total: number;
+}
+
+interface CPointsBreakdown {
+  fruitVegNuts: number;
+  fibre: number;
+  protein: number;
+  proteinApplied: number;
+  total: number;
+}
+
+export interface ScoreResultData {
+  aPoints: APointsBreakdown;
+  cPoints: CPointsBreakdown;
+  fvnPercentage: number;
+  totalScore: number;
+  isDrink: boolean;
+  isHfss: boolean;
+  classification: 'healthier' | 'less healthy';
+}
+
 interface Props {
-  result: ScoreResultType;
+  result: ScoreResultData;
 }
 
 export default function ScoreResult({ result }: Props) {
@@ -16,7 +41,6 @@ export default function ScoreResult({ result }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-        {/* A Points */}
         <div>
           <h4 className="text-sm font-medium text-red-700 mb-2">
             A Points (negative) — {aPoints.total}/40
@@ -29,7 +53,6 @@ export default function ScoreResult({ result }: Props) {
           </div>
         </div>
 
-        {/* C Points */}
         <div>
           <h4 className="text-sm font-medium text-green-700 mb-2">
             C Points (positive) — {cPoints.total}/15
@@ -41,13 +64,12 @@ export default function ScoreResult({ result }: Props) {
               label="Protein"
               value={cPoints.proteinApplied}
               max={5}
-              note={cPoints.proteinApplied !== cPoints.protein ? `(blocked: A pts >= 11, FVN < 5)` : undefined}
+              note={cPoints.proteinApplied !== cPoints.protein ? '(blocked: A pts >= 11, FVN < 5)' : undefined}
             />
           </div>
         </div>
       </div>
 
-      {/* Final calculation */}
       <div className="border-t pt-4 text-sm text-gray-700">
         <span className="font-mono">
           {aPoints.total} (A) - {cPoints.total} (C) = <strong>{totalScore}</strong>
@@ -69,10 +91,7 @@ function Row({ label, value, max, note }: { label: string; value: number; max: n
     <div className="flex items-center gap-2">
       <span className="w-28 text-gray-600">{label}</span>
       <div className="flex-1 bg-gray-100 rounded-full h-2">
-        <div
-          className="h-2 rounded-full bg-current"
-          style={{ width: `${pct}%` }}
-        />
+        <div className="h-2 rounded-full bg-current" style={{ width: `${pct}%` }} />
       </div>
       <span className="w-8 text-right font-mono">{value}</span>
       {note && <span className="text-xs text-amber-600">{note}</span>}

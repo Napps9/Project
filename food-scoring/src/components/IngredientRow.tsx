@@ -1,5 +1,6 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { classifyIngredient } from '../api/client';
 
 interface Props {
   index: number;
@@ -18,7 +19,14 @@ export default function IngredientRow({ index, name, proportion, onChange, onRem
       return;
     }
     const timeout = setTimeout(() => {
-      classifyIngredient(name.trim()).then(setFvnStatus).catch(() => setFvnStatus(null));
+      fetch('/api/classify-ingredient', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+        .then((r) => r.json())
+        .then(setFvnStatus)
+        .catch(() => setFvnStatus(null));
     }, 400);
     return () => clearTimeout(timeout);
   }, [name]);
@@ -47,9 +55,7 @@ export default function IngredientRow({ index, name, proportion, onChange, onRem
       {fvnStatus && (
         <span
           className={`text-xs px-1.5 py-0.5 rounded ${
-            fvnStatus.isFvn
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-500'
+            fvnStatus.isFvn ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
           }`}
           title={fvnStatus.category}
         >

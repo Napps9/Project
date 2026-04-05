@@ -1,10 +1,6 @@
-import { useState } from 'react';
-import ProductForm from './components/ProductForm';
-import ProductList from './components/ProductList';
+import ProductForm from '@/components/ProductForm';
 
-export default function App() {
-  const [refreshKey, setRefreshKey] = useState(0);
-
+export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
@@ -16,18 +12,11 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8 space-y-10">
+      <main className="max-w-4xl mx-auto px-6 py-8">
         <section>
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Score a Product</h2>
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <ProductForm onProductSaved={() => setRefreshKey((k) => k + 1)} />
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Saved Products</h2>
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <ProductList refreshKey={refreshKey} />
+            <ProductForm />
           </div>
         </section>
       </main>

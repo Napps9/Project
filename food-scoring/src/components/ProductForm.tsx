@@ -1,11 +1,21 @@
-import { useState } from 'react';
-import { NutritionData, IngredientInput, ScoreResult as ScoreResultType } from '../types';
-import { scoreProduct, createProduct } from '../api/client';
-import IngredientRow from './IngredientRow';
-import ScoreResult from './ScoreResult';
+'use client';
 
-interface Props {
-  onProductSaved?: () => void;
+import { useState } from 'react';
+import IngredientRow from './IngredientRow';
+import ScoreResult, { ScoreResultData } from './ScoreResult';
+
+interface NutritionData {
+  energyKj: number;
+  saturatedFatG: number;
+  totalSugarG: number;
+  sodiumMg: number;
+  fibreAoacG: number;
+  proteinG: number;
+}
+
+interface IngredientInput {
+  name: string;
+  proportion: number;
 }
 
 const emptyNutrition: NutritionData = {
@@ -17,14 +27,13 @@ const emptyNutrition: NutritionData = {
   proteinG: 0,
 };
 
-export default function ProductForm({ onProductSaved }: Props) {
-  const [productName, setProductName] = useState('');
+export default function ProductForm() {
   const [isDrink, setIsDrink] = useState(false);
   const [nutrition, setNutrition] = useState<NutritionData>(emptyNutrition);
   const [ingredients, setIngredients] = useState<IngredientInput[]>([
     { name: '', proportion: 0 },
   ]);
-  const [result, setResult] = useState<ScoreResultType | null>(null);
+  const [result, setResult] = useState<ScoreResultData | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -57,7 +66,16 @@ export default function ProductForm({ onProductSaved }: Props) {
     setLoading(true);
     try {
       const validIngredients = ingredients.filter((i) => i.name.trim());
-      const score = await scoreProduct(nutrition, validIngredients, isDrink);
+      const res = await fetch('/api/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nutrition, ingredients: validIngredients, isDrink }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || res.statusText);
+      }
+      const score = await res.json();
       setResult(score);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Scoring failed');
@@ -66,36 +84,9 @@ export default function ProductForm({ onProductSaved }: Props) {
     }
   };
 
-  const handleSave = async () => {
-    if (!productName.trim()) {
-      setError('Product name is required to save');
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      const validIngredients = ingredients.filter((i) => i.name.trim());
-      const { score } = await createProduct(productName, nutrition, validIngredients, isDrink);
-      setResult(score);
-      onProductSaved?.();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Save failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Product meta */}
       <div className="flex items-center gap-4">
-        <input
-          type="text"
-          placeholder="Product name (optional for quick score)"
-          value={productName}
-          onChange={(e) => setProductName(e.target.value)}
-          className="flex-1 border rounded px-3 py-2"
-        />
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -103,11 +94,10 @@ export default function ProductForm({ onProductSaved }: Props) {
             onChange={(e) => setIsDrink(e.target.checked)}
             className="rounded"
           />
-          Drink
+          This is a drink
         </label>
       </div>
 
-      {/* Nutrition per 100g */}
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-3">Nutrition per 100g</h3>
         <div className="grid grid-cols-3 gap-3">
@@ -120,12 +110,11 @@ export default function ProductForm({ onProductSaved }: Props) {
         </div>
       </div>
 
-      {/* Ingredients for FVN */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-gray-700">
             Ingredients
-            <span className="font-normal text-gray-400 ml-1">(for FVN % calculation)</span>
+            <span className="font-normal text-gray-400 ml-1">(for automatic FVN % calculation)</span>
           </h3>
           <span className={`text-xs ${Math.abs(totalProportion - 100) < 0.1 ? 'text-green-600' : 'text-amber-600'}`}>
             Total: {totalProportion.toFixed(1)}%
@@ -152,7 +141,6 @@ export default function ProductForm({ onProductSaved }: Props) {
         </button>
       </div>
 
-      {/* Actions */}
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-3">
         <button
@@ -162,16 +150,8 @@ export default function ProductForm({ onProductSaved }: Props) {
         >
           {loading ? 'Calculating...' : 'Calculate Score'}
         </button>
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 disabled:opacity-50 text-sm font-medium"
-        >
-          Save Product
-        </button>
       </div>
 
-      {/* Result */}
       {result && <ScoreResult result={result} />}
     </div>
   );

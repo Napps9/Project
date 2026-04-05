@@ -1,6 +1,4 @@
-node_modules/
-dist/
-.env
+node_modules
+.next
+out
 *.db
-*.sqlite
-.DS_Store

@@ -47,30 +47,23 @@ export interface ScoreResult {
 
 // ── Stored models ──
 
-export interface Product {
-  id: number;
-  name: string;
-  isDrink: boolean;
-  energyKj: number;
-  saturatedFatG: number;
-  totalSugarG: number;
-  sodiumMg: number;
-  fibreAoacG: number;
-  proteinG: number;
-  fvnPercentage: number;
-  npmScore: number | null;
-  isHfss: boolean | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Ingredient {
-  id: number;
-  productId: number;
+export interface ParsedIngredientState {
   name: string;
   proportion: number;
   isFvn: boolean;
-  createdAt: string;
+  category: string;
+  recognition: FvnRecognition;
+  userOverrideFvn: boolean;
+}
+
+export interface SavedProduct {
+  id: string;
+  name: string;
+  isDrink: boolean;
+  nutrition: NutritionData;
+  ingredients: ParsedIngredientState[];
+  result: ScoreResult;
+  savedAt: string;
 }
 
 // ── FVN classification ──

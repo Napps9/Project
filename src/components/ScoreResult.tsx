@@ -1,30 +1,7 @@
+import { ScoreResult as ScoreResultData } from '@/lib/types';
 import ScoreBadge from './ScoreBadge';
 
-interface APointsBreakdown {
-  energy: number;
-  saturatedFat: number;
-  sugar: number;
-  sodium: number;
-  total: number;
-}
-
-interface CPointsBreakdown {
-  fruitVegNuts: number;
-  fibre: number;
-  protein: number;
-  proteinApplied: number;
-  total: number;
-}
-
-export interface ScoreResultData {
-  aPoints: APointsBreakdown;
-  cPoints: CPointsBreakdown;
-  fvnPercentage: number;
-  totalScore: number;
-  isDrink: boolean;
-  isHfss: boolean;
-  classification: 'healthier' | 'less healthy';
-}
+export type { ScoreResultData };
 
 interface Props {
   result: ScoreResultData;

@@ -1,17 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import IngredientPasteInput, { ParsedIngredientState } from './IngredientPasteInput';
-import ScoreResult, { ScoreResultData } from './ScoreResult';
-
-interface NutritionData {
-  energyKj: number;
-  saturatedFatG: number;
-  totalSugarG: number;
-  sodiumMg: number;
-  fibreAoacG: number;
-  proteinG: number;
-}
+import { useState, useEffect } from 'react';
+import { NutritionData, SavedProduct, ScoreResult, ParsedIngredientState } from '@/lib/types';
+import IngredientPasteInput from './IngredientPasteInput';
+import ScoreResultDisplay from './ScoreResult';
+import SaveProductDialog from './SaveProductDialog';
 
 const emptyNutrition: NutritionData = {
   energyKj: 0,
@@ -22,13 +15,41 @@ const emptyNutrition: NutritionData = {
   proteinG: 0,
 };
 
-export default function ProductForm() {
+interface Props {
+  initialProduct?: SavedProduct | null;
+  onSaved?: () => void;
+  onNewProduct?: () => void;
+}
+
+export default function ProductForm({ initialProduct, onSaved, onNewProduct }: Props) {
   const [isDrink, setIsDrink] = useState(false);
   const [nutrition, setNutrition] = useState<NutritionData>(emptyNutrition);
   const [ingredients, setIngredients] = useState<ParsedIngredientState[]>([]);
-  const [result, setResult] = useState<ScoreResultData | null>(null);
+  const [result, setResult] = useState<ScoreResult | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+
+  // Load saved product into form when selected
+  useEffect(() => {
+    if (initialProduct) {
+      setIsDrink(initialProduct.isDrink);
+      setNutrition(initialProduct.nutrition);
+      setIngredients(initialProduct.ingredients);
+      setResult(initialProduct.result);
+      setResetKey((k) => k + 1);
+    }
+  }, [initialProduct?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleReset = () => {
+    setIsDrink(false);
+    setNutrition(emptyNutrition);
+    setIngredients([]);
+    setResult(null);
+    setError('');
+    setResetKey((k) => k + 1);
+    onNewProduct?.();
+  };
 
   const updateNutrition = (field: keyof NutritionData, value: string) => {
     setNutrition((prev) => ({ ...prev, [field]: parseFloat(value) || 0 }));
@@ -38,7 +59,6 @@ export default function ProductForm() {
     setError('');
     setLoading(true);
     try {
-      // Calculate FVN percentage client-side, applying user overrides for unknown items
       const validIngredients = ingredients.filter((i) => i.name.trim());
       const fvnPercentage = Math.min(
         validIngredients
@@ -67,7 +87,7 @@ export default function ProductForm() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -77,6 +97,12 @@ export default function ProductForm() {
           />
           This is a drink
         </label>
+        <button
+          onClick={handleReset}
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          New Product
+        </button>
       </div>
 
       <div>
@@ -96,7 +122,11 @@ export default function ProductForm() {
           Ingredients
           <span className="font-normal text-gray-400 ml-1">(paste comma-separated list for automatic FVN classification)</span>
         </h3>
-        <IngredientPasteInput ingredients={ingredients} onChange={setIngredients} />
+        <IngredientPasteInput
+          key={resetKey}
+          ingredients={ingredients}
+          onChange={setIngredients}
+        />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -110,7 +140,19 @@ export default function ProductForm() {
         </button>
       </div>
 
-      {result && <ScoreResult result={result} />}
+      {result && (
+        <>
+          <ScoreResultDisplay result={result} />
+          <SaveProductDialog
+            key={result.totalScore + '-' + Date.now()}
+            isDrink={isDrink}
+            nutrition={nutrition}
+            ingredients={ingredients}
+            result={result}
+            onSaved={() => onSaved?.()}
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -1,15 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { ParsedIngredientState } from '@/lib/types';
 
-export interface ParsedIngredientState {
-  name: string;
-  proportion: number;
-  isFvn: boolean;
-  category: string;
-  recognition: 'recognized_fvn' | 'recognized_non_fvn' | 'unrecognized';
-  userOverrideFvn: boolean;
-}
+export type { ParsedIngredientState };
 
 interface Props {
   ingredients: ParsedIngredientState[];

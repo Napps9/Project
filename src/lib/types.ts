@@ -53,7 +53,7 @@ export interface ParsedIngredientState {
   isFvn: boolean;
   category: string;
   recognition: FvnRecognition;
-  userOverrideFvn: boolean;
+  userVote: 'up' | 'down' | null;
 }
 
 export interface SavedProduct {
@@ -64,6 +64,15 @@ export interface SavedProduct {
   ingredients: ParsedIngredientState[];
   result: ScoreResult;
   savedAt: string;
+}
+
+// ── FVN learning ──
+
+export interface FvnOverride {
+  name: string;
+  isFvn: boolean;
+  category: string;
+  updatedAt: string;
 }
 
 // ── FVN classification ──

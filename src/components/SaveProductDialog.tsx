@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { NutritionData, ParsedIngredientState, ScoreResult } from '@/lib/types';
-import { saveProduct } from '@/lib/storage';
+import { saveProduct, saveFvnOverridesFromIngredients } from '@/lib/storage';
 
 interface Props {
   isDrink: boolean;
@@ -19,6 +19,7 @@ export default function SaveProductDialog({ isDrink, nutrition, ingredients, res
   const handleSave = () => {
     if (!name.trim()) return;
     saveProduct({ name: name.trim(), isDrink, nutrition, ingredients, result });
+    saveFvnOverridesFromIngredients(ingredients);
     setSaved(true);
     onSaved();
   };

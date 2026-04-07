@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { NutritionData, SavedProduct, ScoreResult, ParsedIngredientState } from '@/lib/types';
+import { parseNutritionText } from '@/lib/nutrition-parser';
 import IngredientPasteInput from './IngredientPasteInput';
 import ScoreResultDisplay from './ScoreResult';
 import SaveProductDialog from './SaveProductDialog';
@@ -30,7 +31,10 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
   const [loading, setLoading] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
-  // Load saved product into form when selected
+  // Nutrition paste state
+  const [nutritionText, setNutritionText] = useState('');
+  const [parseInfo, setParseInfo] = useState<{ found: string[]; notFound: string[] } | null>(null);
+
   useEffect(() => {
     if (initialProduct) {
       setIsDrink(initialProduct.isDrink);
@@ -38,6 +42,8 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
       setIngredients(initialProduct.ingredients);
       setResult(initialProduct.result);
       setResetKey((k) => k + 1);
+      setNutritionText('');
+      setParseInfo(null);
     }
   }, [initialProduct?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -47,8 +53,17 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
     setIngredients([]);
     setResult(null);
     setError('');
+    setNutritionText('');
+    setParseInfo(null);
     setResetKey((k) => k + 1);
     onNewProduct?.();
+  };
+
+  const handleParseNutrition = () => {
+    if (!nutritionText.trim()) return;
+    const { parsed, found, notFound } = parseNutritionText(nutritionText);
+    setNutrition((prev) => ({ ...prev, ...parsed }));
+    setParseInfo({ found, notFound });
   };
 
   const updateNutrition = (field: keyof NutritionData, value: string) => {
@@ -62,7 +77,7 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
       const validIngredients = ingredients.filter((i) => i.name.trim());
       const fvnPercentage = Math.min(
         validIngredients
-          .filter((ing) => ing.isFvn || ing.userOverrideFvn)
+          .filter((ing) => (ing.isFvn && ing.userVote !== 'down') || (!ing.isFvn && ing.userVote === 'up'))
           .reduce((sum, ing) => sum + ing.proportion, 0),
         100
       );
@@ -107,6 +122,37 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
 
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-3">Nutrition per 100g</h3>
+
+        {/* Nutrition paste input */}
+        <div className="mb-4">
+          <textarea
+            value={nutritionText}
+            onChange={(e) => setNutritionText(e.target.value)}
+            placeholder="Paste nutrition information here (e.g. Energy: 1500kJ, Sat Fat: 4g, Sugars: 15g, Salt: 1.2g, Fibre: 3g, Protein: 5g)"
+            rows={3}
+            className="w-full border rounded px-3 py-2 text-sm resize-y mb-2"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleParseNutrition}
+              disabled={!nutritionText.trim()}
+              className="px-3 py-1.5 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:opacity-50 text-xs font-medium"
+            >
+              Parse Nutrition
+            </button>
+            {parseInfo && (
+              <div className="text-xs">
+                {parseInfo.found.length > 0 && (
+                  <span className="text-green-600">Found: {parseInfo.found.join(', ')}</span>
+                )}
+                {parseInfo.notFound.length > 0 && (
+                  <span className="text-amber-600 ml-2">Not found: {parseInfo.notFound.join(', ')}</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-3 gap-3">
           <NutrientField label="Energy (kJ)" value={nutrition.energyKj} field="energyKj" onChange={updateNutrition} />
           <NutrientField label="Saturated Fat (g)" value={nutrition.saturatedFatG} field="saturatedFatG" onChange={updateNutrition} />

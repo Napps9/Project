@@ -1,25 +1,25 @@
-import ScoringPage from '@/components/ScoringPage';
+import FvnListPage from '@/components/FvnListPage';
 import Link from 'next/link';
 
-export default function Home() {
+export default function FvnListRoute() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">UK NPM Food Scoring</h1>
+            <h1 className="text-xl font-bold text-gray-900">Learned FVN Ingredients</h1>
             <p className="text-sm text-gray-500">
-              Nutrient Profiling Model (2004/2005) — HFSS Classification
+              Ingredients the system has learned from your scoring history
             </p>
           </div>
-          <Link href="/fvn-list" className="text-sm text-blue-600 hover:text-blue-800">
-            Learned Ingredients
+          <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
+            Back to Scoring
           </Link>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <ScoringPage />
+        <FvnListPage />
       </main>
     </div>
   );

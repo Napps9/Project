@@ -1,4 +1,4 @@
-import { FvnCategory, FvnRecognition, ParsedIngredient } from '../types';
+import { FvnCategory, FvnRecognition, FvnOverride, ParsedIngredient } from '../types';
 
 /**
  * FVN (Fruit, Vegetable & Nut) ingredient classifier.
@@ -119,6 +119,31 @@ export function classifyIngredient(name: string): { isFvn: boolean; category: Fv
   }
 
   return { isFvn: false, category: 'none', recognition: 'unrecognized' };
+}
+
+/**
+ * Classify an ingredient, checking learned overrides first.
+ * Priority: exact match in overrides → fall back to built-in classifier.
+ */
+export function classifyWithOverrides(
+  name: string,
+  overrides: FvnOverride[]
+): { isFvn: boolean; category: FvnCategory; recognition: FvnRecognition } {
+  const normalised = normalise(name);
+
+  // Check exact match in learned overrides
+  for (const override of overrides) {
+    if (override.name === normalised) {
+      return {
+        isFvn: override.isFvn,
+        category: (override.isFvn ? override.category : 'none') as FvnCategory,
+        recognition: override.isFvn ? 'recognized_fvn' : 'recognized_non_fvn',
+      };
+    }
+  }
+
+  // Fall back to built-in classifier
+  return classifyIngredient(name);
 }
 
 /** Items that look like they could match but are NOT FVN */

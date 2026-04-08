@@ -170,14 +170,119 @@ export function cleanIngredientLine(
 }
 
 /**
- * Extract the ingredient text from a block. Handles both:
- *  - Supplier multi-line format (one ingredient per line, with GRAM/PCE
- *    weights) → cleans each line, computes proportions from weights, and
- *    returns a percentage-annotated comma-separated string.
- *  - Loose / single-line format → joins lines with spaces (caller will
- *    comma-split as before).
+ * Extract the ingredient text from a block. Handles two distinct shapes:
+ *
+ *  1. Supplier catalog format (whether multi-line or flattened onto one
+ *     line) — each ingredient has a "GRAM N" / "MILLILITRE N" / "KILOGRAM N"
+ *     or "PCE N (1 PCE = X G)" unit-weight marker. We scan the whole block
+ *     for those markers and split at each marker boundary to produce one
+ *     chunk per ingredient, then clean each chunk and emit
+ *     "Name pct%, Name pct%, …" with proportions computed from the weights.
+ *     This works identically whether pdfjs gave us 9 lines or 1 long line.
+ *
+ *  2. Loose format ("Ingredients: strawberries, sugar" or a comma list) —
+ *     no unit-weight markers. We fall back to the traditional line-based
+ *     collection and return a joined string for the caller's comma-splitter.
  */
 function extractIngredients(block: string): string {
+  // Strategy 1: catalog boundary scan on the flattened block text.
+  const catalogResult = extractCatalogIngredients(block);
+  if (catalogResult !== null) return catalogResult;
+
+  // Strategy 2: line-based collection for loose / comma-separated formats.
+  return extractLooseIngredients(block);
+}
+
+/**
+ * Scan the flattened block text for unit-weight markers
+ * (GRAM/MILLILITRE/KILOGRAM/PCE) and split at each marker boundary.
+ * Returns null if fewer than 2 markers are found (caller should fall back).
+ */
+export function extractCatalogIngredients(block: string): string | null {
+  const flat = block.replace(/\s+/g, ' ').trim();
+  if (!flat) return null;
+
+  // Determine the start of the ingredient region.
+  // Prefer the position right after an "Ingredients" marker if present;
+  // otherwise start at 0 (boundaries before the recipe name still won't
+  // happen because the recipe name line doesn't contain unit markers).
+  let start = 0;
+  const ingMatch = flat.match(/\bIngredients?\s*[:\-]?/i);
+  if (ingMatch && ingMatch.index !== undefined) {
+    start = ingMatch.index + ingMatch[0].length;
+  }
+
+  // End of the ingredient region: the first nutrition-section header we see.
+  let end = flat.length;
+  const nutHeaderRe = /\b(?:NUTRIENTS?\b|Nutrition(?:al)?\b|per\s*100\s*g\b)/i;
+  const nutMatch = flat.slice(start).match(nutHeaderRe);
+  if (nutMatch && nutMatch.index !== undefined) {
+    end = start + nutMatch.index;
+  }
+
+  const region = flat.slice(start, end);
+  if (!region) return null;
+
+  // Global variants of the module-scope PCE_REGEX / UNIT_WEIGHT_REGEX.
+  const pceGlobal = /\bPCE\s+\d+(?:\.\d+)?\s*\(?\s*1\s*PCE\s*=\s*\d+(?:\.\d+)?\s*G\s*\)?/gi;
+  const unitGlobal = /\b(?:GRAMS?|MILLILITRES?|KILOGRAMS?)\s+\d+(?:\.\d+)?/gi;
+
+  const boundaries: { start: number; end: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = pceGlobal.exec(region)) !== null) {
+    boundaries.push({ start: m.index, end: m.index + m[0].length });
+  }
+  while ((m = unitGlobal.exec(region)) !== null) {
+    const hit = { start: m.index, end: m.index + m[0].length };
+    // Drop any plain GRAM match that's fully contained inside a PCE match
+    // (the trailing "… G)" annotation of a PCE overlaps the simpler pattern).
+    const containedByPce = boundaries.some(
+      (b) => b.start <= hit.start && hit.end <= b.end
+    );
+    if (!containedByPce) boundaries.push(hit);
+  }
+  boundaries.sort((a, b) => a.start - b.start);
+
+  if (boundaries.length < 2) return null;
+
+  // Slice region into per-ingredient chunks at each boundary.
+  const chunks: string[] = [];
+  let cursor = 0;
+  for (const b of boundaries) {
+    chunks.push(region.slice(cursor, b.end).trim());
+    cursor = b.end;
+  }
+  // Anything after the last boundary is trailing noise — ignore.
+
+  const cleaned = chunks
+    .map(cleanIngredientLine)
+    .filter(
+      (c): c is { name: string; weightG: number | null } =>
+        c !== null && c.name.length > 0
+    );
+
+  if (cleaned.length === 0) return null;
+
+  const totalWeight = cleaned.reduce((sum, c) => sum + (c.weightG ?? 0), 0);
+
+  if (totalWeight > 0) {
+    return cleaned
+      .map((c) => {
+        const pct = c.weightG ? ((c.weightG / totalWeight) * 100).toFixed(2) : '0';
+        return `${c.name} ${pct}%`;
+      })
+      .join(', ');
+  }
+
+  // Boundaries matched but no weights resolved — still return cleaned names.
+  return cleaned.map((c) => c.name).join(', ');
+}
+
+/**
+ * Traditional line-based ingredient collection for loose formats like
+ * "Ingredients: strawberries, sugar, butter".
+ */
+function extractLooseIngredients(block: string): string {
   const lines = block.split('\n');
   let inIngredients = false;
   const collected: string[] = [];
@@ -206,37 +311,7 @@ function extractIngredients(block: string): string {
   }
 
   if (collected.length === 0) return '';
-
-  // Multi-line supplier format detection: 2+ lines, at least half have unit
-  // markers (GRAM/MILLILITRE/PCE)
-  const linesWithUnits = collected.filter((l) => PCE_REGEX.test(l) || UNIT_WEIGHT_REGEX.test(l));
-  const isMultiLineCatalog =
-    collected.length >= 2 && linesWithUnits.length >= Math.ceil(collected.length / 2);
-
-  if (!isMultiLineCatalog) {
-    // Loose format: join with spaces, let the caller's comma-splitter handle it
-    return collected.join(' ').replace(/\s+/g, ' ').trim();
-  }
-
-  const cleaned = collected
-    .map(cleanIngredientLine)
-    .filter((c): c is { name: string; weightG: number | null } => c !== null);
-
-  if (cleaned.length === 0) return '';
-
-  const totalWeight = cleaned.reduce((sum, c) => sum + (c.weightG ?? 0), 0);
-
-  if (totalWeight > 0) {
-    return cleaned
-      .map((c) => {
-        const pct = c.weightG ? ((c.weightG / totalWeight) * 100).toFixed(2) : '0';
-        return `${c.name} ${pct}%`;
-      })
-      .join(', ');
-  }
-
-  // No weights extracted — at least return cleaned names
-  return cleaned.map((c) => c.name).join(', ');
+  return collected.join(' ').replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -262,7 +337,24 @@ export function extractPdfNutrition(
   while (/(\d),(\d{3})/.test(clean)) {
     clean = clean.replace(/(\d),(\d{3})/g, '$1$2');
   }
-  const lines = clean.split('\n').map((l) => l.trim()).filter(Boolean);
+  const allLines = clean.split('\n').map((l) => l.trim()).filter(Boolean);
+
+  // Restrict nutrition extraction to the nutrition section when a clear
+  // section header exists. Otherwise scan everything — loose formats like
+  // "Energy 450 kJ, Sugars 20 g, …" often have no header at all.
+  //
+  // Why this matters: supplier-format ingredient lines can accidentally
+  // contain nutrient-sounding tokens ("Caster Sugar", "Low Fat"), and the
+  // PCE annotation "(1 PCE = 58 G)" contains a "g-suffixed" number that
+  // would otherwise be picked up as a sugar/fat/protein value.
+  let headerIdx = -1;
+  for (let i = 0; i < allLines.length; i++) {
+    if (NUTRITION_HEADER_REGEX.test(allLines[i])) {
+      headerIdx = i;
+      break;
+    }
+  }
+  const lines = headerIdx >= 0 ? allLines.slice(headerIdx) : allLines;
 
   // Only a genuine nutritional unit parenthetical counts as a unit annotation
   // when deciding whether a line is a two-column table row. "(25%)", "(Foo

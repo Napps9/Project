@@ -4,6 +4,7 @@ import {
   splitRecipeBlocks,
   cleanIngredientLine,
   extractPdfNutrition,
+  extractCatalogIngredients,
 } from '../pdf-importer';
 
 describe('splitRecipeBlocks', () => {
@@ -382,5 +383,141 @@ Protein (g) 3.22 4.87`;
     expect(text).not.toContain('MILLILITRE');
     expect(text).not.toContain('(Everyday Favourites)');
     expect(text).not.toContain('Drinks, Snacks');
+  });
+});
+
+describe('extractCatalogIngredients', () => {
+  it('returns null for plain text with no unit-weight markers', () => {
+    expect(extractCatalogIngredients('strawberries, sugar, butter')).toBeNull();
+  });
+
+  it('returns null when only one marker is present', () => {
+    expect(
+      extractCatalogIngredients('Ingredients: Flour GRAM 100.000')
+    ).toBeNull();
+  });
+
+  it('splits a flat two-ingredient string at GRAM boundaries', () => {
+    const result = extractCatalogIngredients(
+      'Ingredients: Plain Flour [1111] GRAM 80.000 Caster Sugar [2222] GRAM 20.000'
+    );
+    expect(result).not.toBeNull();
+    const parts = result!.split(',').map((s) => s.trim());
+    expect(parts).toHaveLength(2);
+    expect(parts[0]).toMatch(/Plain Flour.*80\.00\s*%/);
+    expect(parts[1]).toMatch(/Caster Sugar.*20\.00\s*%/);
+  });
+
+  it('handles mixed GRAM + MILLILITRE + PCE markers on one line', () => {
+    const result = extractCatalogIngredients(
+      'Ingredients: Flour [1] GRAM 100.000 Oil [2] MILLILITRE 50.000 Eggs [3] PCE 2.000 (1 PCE = 50 G)'
+    );
+    expect(result).not.toBeNull();
+    const parts = result!.split(',').map((s) => s.trim());
+    expect(parts).toHaveLength(3);
+    // Total = 100 + 50 + 100 = 250
+    expect(parts[0]).toMatch(/Flour.*40\.00\s*%/);
+    expect(parts[1]).toMatch(/Oil.*20\.00\s*%/);
+    expect(parts[2]).toMatch(/Eggs.*40\.00\s*%/);
+  });
+});
+
+describe('parsePdfText — flattened supplier output (real Courgette cake)', () => {
+  // Realistic pdfjs-dist output for this PDF: the recipe header, section
+  // headers, and each nutrition row land on their own lines (Y-coordinate
+  // jumps are large enough to trigger our newline insertion), but the
+  // ingredient rows in the supplier table are packed tightly enough that
+  // they all collapse onto a single line. This matches the user's screenshot
+  // where name / isDrink / nutrition were all correct but only 2 garbled
+  // ingredients came through.
+  const flatCourgetteCake = [
+    'Courgette cake',
+    'Portions: 14',
+    'Ingredients:',
+    // All 9 ingredients flattened onto one line — the bug reproducer
+    'Everyday Essentials Everyday Favourites Plain White Flour - GENERAL - 6-1.5kg (Everyday Favourites) [42018] GRAM 180.000 ' +
+      'Drinks, Snacks & Confectionery Freshers Low Fat Cocoa Powder - GENERAL - 500g (FRESHERS) [26385] GRAM 30.000 ' +
+      'Everyday Essentials Dr. Oetker Professional Gluten Free Baking Powder - GENERAL - 500g (Dr. Oetker Professional) [09092] GRAM 5.000 ' +
+      'Everyday Essentials Dr. Oetker Professional Bicarbonate of Soda - GENERAL - 500G (Dr. Oetker) [25595] GRAM 3.000 ' +
+      'Everyday Essentials Tate & Lyle Caster Sugar Drum - GENERAL - 1-3kg (TATE & LYLE) [80262] GRAM 120.000 ' +
+      'Everyday Essentials Everyday Favourites Extended Life Vegetable Oil - GENERAL - 5ltr (Everyday Favourites) [03435] MILLILITRE 170.000 ' +
+      'Dairy Barn Cage Free Medium Lion Quality Eggs - CHILLED - 1-60pk (Ballygarvey) [23443] PCE 2.000 (1 PCE = 58 G) ' +
+      'Everyday Essentials Whole Glace Cherries - GENERAL - 1kg (Curtis) [19899] GRAM 60.000 ' +
+      'Produce & Accompaniments BB - Courgette Green - CHILLED - 1-1kg (Unbranded) [75417] GRAM 240.000',
+    'NUTRIENTS QUANTITY PER SERVE (66.00G) and QUANTITY PER 100 G:',
+    'Energy-Kilojoules 923.30 kj 1,398.93 kj',
+    'Energy-Kilocalories 220.97 kcal 334.80 kcal',
+    'Fat, Total 13.39 g 20.29 g',
+    'Saturated 1.20 g 1.82 g',
+    'Carbohydrate 21.43 g 32.48 g',
+    'Sugars 11.48 g 17.39 g',
+    'Dietary Fibre 1.33 g 2.02 g',
+    'Protein 3.22 g 4.87 g',
+  ].join('\n');
+
+  it('detects the recipe name "Courgette cake"', () => {
+    const result = parsePdfText(flatCourgetteCake);
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].name).toBe('Courgette cake');
+  });
+
+  it('is not misclassified as a drink despite "Drinks" in the cocoa category label', () => {
+    const result = parsePdfText(flatCourgetteCake);
+    expect(result.rows[0].isDrink).toBe(false);
+  });
+
+  it('extracts per-100g nutrition from the Energy-Kilojoules row', () => {
+    const result = parsePdfText(flatCourgetteCake);
+    const n = result.rows[0].nutrition;
+    expect(n.energyKj).toBeCloseTo(1398.93, 2);
+    expect(n.saturatedFatG).toBeCloseTo(1.82, 2);
+    expect(n.totalSugarG).toBeCloseTo(17.39, 2);
+    expect(n.fibreAoacG).toBeCloseTo(2.02, 2);
+    expect(n.proteinG).toBeCloseTo(4.87, 2);
+  });
+
+  it('leaves sodium at 0 when the PDF has no sodium or salt row', () => {
+    const result = parsePdfText(flatCourgetteCake);
+    expect(result.rows[0].nutrition.sodiumMg).toBe(0);
+    // And reports it as a missing field
+    const missingErr = result.errors.find((e) => e.includes('Sodium'));
+    expect(missingErr).toBeDefined();
+  });
+
+  it('extracts all 9 ingredients even though everything is on one line', () => {
+    const result = parsePdfText(flatCourgetteCake);
+    const parts = result.rows[0].ingredientText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    expect(parts).toHaveLength(9);
+  });
+
+  it('strips all supplier catalog noise from the flat output', () => {
+    const result = parsePdfText(flatCourgetteCake);
+    const text = result.rows[0].ingredientText;
+    expect(text).not.toContain('GENERAL');
+    expect(text).not.toContain('CHILLED');
+    expect(text).not.toContain('[42018]');
+    expect(text).not.toContain('[75417]');
+    expect(text).not.toContain('GRAM');
+    expect(text).not.toContain('MILLILITRE');
+    expect(text).not.toMatch(/\bPCE\b/);
+    expect(text).not.toContain('(Everyday Favourites)');
+    expect(text).not.toContain('(TATE & LYLE)');
+  });
+
+  it('computes correct weight-based proportions', () => {
+    const result = parsePdfText(flatCourgetteCake);
+    const text = result.rows[0].ingredientText;
+    // Total weight = 180+30+5+3+120+170+116+60+240 = 924g
+    // Courgette (the only FVN): 240/924 ≈ 25.97%
+    expect(text).toMatch(/Courgette[^,]*?25\.97\s*%/i);
+    // Flour: 180/924 ≈ 19.48%
+    expect(text).toMatch(/Flour[^,]*?19\.48\s*%/i);
+    // Eggs: 116/924 ≈ 12.55% (2 pieces × 58g verifies PCE handling)
+    expect(text).toMatch(/Eggs[^,]*?12\.55\s*%/i);
+    // Vegetable Oil: 170/924 ≈ 18.40% (verifies MILLILITRE handling)
+    expect(text).toMatch(/Oil[^,]*?18\.40\s*%/i);
   });
 });

@@ -146,24 +146,39 @@ function detectForm(name: string, isFvn: boolean, category: FvnCategory): FvnFor
 /**
  * Classify a single ingredient as FVN or not.
  *
- * Uses substring matching against the FVN keyword database.
- * Returns the category, form, and whether it counts as FVN.
+ * Order of checks:
+ *   1. Strong pre-exclusions: oils, plain seeds, candied (glacé) fruit —
+ *      these look like FVN keywords but are explicitly non-FVN per NPM 2011.
+ *   2. FVN keyword match (specific phrases like "peanut butter" or
+ *      "coconut milk" win here, before generic exclusions like "butter").
+ *   3. Word-boundary exclusion match for non-FVN staples (catches supplier
+ *      catalog format like "Plain White Flour", "Caster Sugar Drum",
+ *      "Low Fat Cocoa Powder" where the staple keyword is not the prefix).
+ *   4. Otherwise: unrecognized.
  */
 export function classifyIngredient(name: string): { isFvn: boolean; category: FvnCategory; recognition: FvnRecognition; form: FvnForm } {
   const normalised = normalise(name);
 
-  // Check against exclusions first (potatoes, grains, seeds, etc.)
-  if (isExcluded(normalised)) {
+  // 1. Pre-exclusions: definitive non-FVN that may match FVN keywords
+  if (isPreExcluded(normalised)) {
     return { isFvn: false, category: 'none', recognition: 'recognized_non_fvn', form: 'none' };
   }
 
+  // 2. FVN keyword match (forward substring only — reverse-includes causes
+  //    false positives like "water" matching "watermelon" or "butter" matching
+  //    "nut butter")
   for (const entry of FVN_DATABASE) {
     for (const keyword of entry.keywords) {
-      if (normalised.includes(keyword) || keyword.includes(normalised)) {
+      if (normalised.includes(keyword)) {
         const form = detectForm(name, true, entry.category);
         return { isFvn: true, category: entry.category, recognition: 'recognized_fvn', form };
       }
     }
+  }
+
+  // 3. Post-exclusions: known non-FVN staples appearing as a whole word
+  if (isExcluded(normalised)) {
+    return { isFvn: false, category: 'none', recognition: 'recognized_non_fvn', form: 'none' };
   }
 
   return { isFvn: false, category: 'none', recognition: 'unrecognized', form: 'none' };
@@ -219,17 +234,35 @@ const EXCLUSIONS = [
   'flaxseed', 'linseed', 'chia seed', 'chia seeds', 'hemp seed', 'poppy seed',
 ];
 
-function isExcluded(normalised: string): boolean {
-  // Any ingredient ending in "seed" or "seeds" is excluded
-  // (seeds are NOT FVN unless commonly called nuts like brazil/cashew/pine — those
-  // are matched via the nut keywords BEFORE this function runs)
-  if (/\bseeds?$/.test(normalised)) {
-    return true;
-  }
+/**
+ * Pre-exclusion checks: things that look like FVN but are not, by NPM rules.
+ * These run BEFORE the FVN keyword loop so e.g. "vegetable oil" doesn't get
+ * mis-classified as a vegetable.
+ */
+function isPreExcluded(normalised: string): boolean {
+  // Any ingredient ending in "seed(s)" is excluded — seeds are NOT FVN
+  // unless commonly called nuts (brazil, cashew, pine), which match the
+  // nut keywords during the FVN loop instead.
+  if (/\bseeds?$/.test(normalised)) return true;
+  // Any ingredient ending in "oil(s)" is excluded — vegetable oil, olive oil,
+  // sunflower oil etc. are not FVN even though "vegetable" is an FVN keyword.
+  if (/\boils?$/.test(normalised)) return true;
+  // Glacé (candied) fruit is heavily processed sugar, not FVN.
+  if (/\bglac[eé]\b/.test(normalised)) return true;
+  return false;
+}
 
-  // Exact match or the normalised name starts with an exclusion
+/**
+ * Post-exclusion checks: known non-FVN staples whose keyword appears anywhere
+ * in the name as a whole word. This catches supplier catalog format where the
+ * product name is buried in category/brand prefixes (e.g. "Everyday Essentials
+ * Plain White Flour" → "flour" matches).
+ */
+function isExcluded(normalised: string): boolean {
   for (const excl of EXCLUSIONS) {
-    if (normalised === excl || normalised.startsWith(excl + ' ')) {
+    const escaped = excl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`\\b${escaped}\\b`);
+    if (re.test(normalised)) {
       return true;
     }
   }

@@ -2,7 +2,7 @@ import { SavedProduct, NutritionData, ParsedIngredientState, ScoreResult, FvnOve
 
 const STORAGE_KEY = 'npm-scorer:products';
 const FVN_OVERRIDES_KEY = 'npm-scorer:fvn-overrides';
-const MAX_PRODUCTS = 50;
+const MAX_PRODUCTS = 500;
 
 export function loadProducts(): SavedProduct[] {
   if (typeof window === 'undefined') return [];
@@ -13,6 +13,10 @@ export function loadProducts(): SavedProduct[] {
   } catch {
     return [];
   }
+}
+
+export function getProductById(id: string): SavedProduct | undefined {
+  return loadProducts().find((p) => p.id === id);
 }
 
 export function saveProduct(data: {

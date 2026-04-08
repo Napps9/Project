@@ -12,9 +12,14 @@ export default function FvnListRoute() {
               Ingredients the system has learned from your scoring history
             </p>
           </div>
-          <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
-            Back to Scoring
-          </Link>
+          <nav className="flex items-center gap-4">
+            <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
+              Score a Recipe
+            </Link>
+            <Link href="/recipes" className="text-sm text-blue-600 hover:text-blue-800">
+              Recipes
+            </Link>
+          </nav>
         </div>
       </header>
 

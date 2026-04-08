@@ -44,11 +44,12 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
               isFvn: override.isFvn,
               category: override.isFvn ? override.category : 'none',
               recognition: override.isFvn ? 'recognized_fvn' as const : 'recognized_non_fvn' as const,
+              form: override.form ?? (override.isFvn ? 'fresh' : 'none'),
               userVote: null,
             };
           }
 
-          return { ...ing, userVote: null };
+          return { ...ing, form: ing.form ?? 'none', userVote: null };
         }
       );
 
@@ -77,7 +78,7 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
   const addIngredient = () => {
     onChange([
       ...ingredients,
-      { name: '', proportion: 0, isFvn: false, category: 'none', recognition: 'unrecognized', userVote: null },
+      { name: '', proportion: 0, isFvn: false, category: 'none', recognition: 'unrecognized', form: 'none', userVote: null },
     ]);
   };
 
@@ -92,12 +93,22 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
     const ing = ingredients[index];
     // Toggle: if already up, clear the vote
     const newVote = ing.userVote === 'up' ? null : 'up' as const;
-    updateIngredient(index, { userVote: newVote });
+    // When promoting a non-FVN/excluded ingredient, default form to 'fresh' so it counts
+    const updates: Partial<ParsedIngredientState> = { userVote: newVote };
+    if (newVote === 'up' && (!ing.isFvn || ing.form === 'excluded' || ing.form === 'none')) {
+      updates.form = 'fresh';
+    }
+    updateIngredient(index, updates);
   };
 
   /** Is this ingredient effectively treated as FVN? */
-  const isEffectiveFvn = (ing: ParsedIngredientState) =>
-    (ing.isFvn && ing.userVote !== 'down') || (!ing.isFvn && ing.userVote === 'up');
+  const isEffectiveFvn = (ing: ParsedIngredientState) => {
+    // Auto-classified FVN, not excluded, not thumbs-downed
+    if (ing.isFvn && ing.form !== 'excluded' && ing.userVote !== 'down') return true;
+    // User-promoted (thumbs up) any ingredient
+    if (ing.userVote === 'up') return true;
+    return false;
+  };
 
   const totalProportion = ingredients.reduce((sum, ing) => sum + ing.proportion, 0);
   const unknownCount = ingredients.filter((i) => i.recognition === 'unrecognized' && i.name.trim()).length;
@@ -211,10 +222,25 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
   );
 }
 
+function formLabel(category: string, form: string): string {
+  if (form === 'dried') return `dried ${category} \u00D72`;
+  if (form === 'nut') return 'nut';
+  return category;
+}
+
 function RecognitionBadge({ ingredient, isEffective }: { ingredient: ParsedIngredientState; isEffective: boolean }) {
   if (!ingredient.name.trim()) return null;
 
-  // If user has overridden, show the effective state
+  // Auto-classified FVN but detected as excluded form (powder/leather/concentrate)
+  if (ingredient.isFvn && ingredient.form === 'excluded' && ingredient.userVote !== 'up') {
+    return (
+      <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium" title="Processed form excluded per UK NPM guidance">
+        excluded (processed)
+      </span>
+    );
+  }
+
+  // User promoted a non-FVN/unknown → show as FVN override
   if (isEffective && !ingredient.isFvn) {
     return (
       <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700">
@@ -222,10 +248,11 @@ function RecognitionBadge({ ingredient, isEffective }: { ingredient: ParsedIngre
       </span>
     );
   }
-  if (!isEffective && ingredient.isFvn) {
+  // User thumbs-downed an auto-FVN ingredient
+  if (!isEffective && ingredient.isFvn && ingredient.form !== 'excluded') {
     return (
       <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-600 line-through">
-        FVN ({ingredient.category})
+        FVN ({formLabel(ingredient.category, ingredient.form)})
       </span>
     );
   }
@@ -234,7 +261,7 @@ function RecognitionBadge({ ingredient, isEffective }: { ingredient: ParsedIngre
     case 'recognized_fvn':
       return (
         <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700">
-          FVN ({ingredient.category})
+          FVN ({formLabel(ingredient.category, ingredient.form)})
         </span>
       );
     case 'recognized_non_fvn':

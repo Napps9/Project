@@ -1,20 +1,23 @@
-import { FvnCategory, FvnRecognition, FvnOverride, ParsedIngredient } from '../types';
+import { FvnCategory, FvnRecognition, FvnForm, FvnOverride, ParsedIngredient } from '../types';
 
 /**
  * FVN (Fruit, Vegetable & Nut) ingredient classifier.
  *
- * Based on the UK NPM guidance, "fruit, vegetables and nuts" includes:
- * - Fresh, canned, frozen, dried fruit and vegetables
+ * Based on the UK NPM 2011 Technical Guidance, "fruit, vegetables and nuts" includes:
+ * - Fresh, canned, frozen fruit and vegetables
+ * - 100% fruit juice (whether freshly squeezed or from concentrate)
+ * - Dried fruit and vegetables (counted at WEIGHT × 2)
+ * - Concentrated tomato puree (counted at WEIGHT × 2)
+ * - Nuts (commonly called nuts — brazil, cashew, pine nut, etc.)
  * - Beans, pulses, lentils (legumes count as vegetables)
- * - Nuts and seeds
- * - Coconut, ginger, mushrooms, sweetcorn
- * - Concentrated/pureed fruit/veg (counted at reconstituted weight)
  *
  * Does NOT include:
  * - Cereals/grains (wheat, rice, oats, corn flour)
- * - Potatoes (tubers used as starchy staple)
+ * - Potatoes, yams and other starchy vegetables
  * - Herbs and spices in small quantities
- * - Fruit juices beyond reconstitution
+ * - Fruit/vegetable powders, leathers, crystals
+ * - Concentrated fruit juice sugars (NOT "from concentrate" reconstituted juices)
+ * - Seeds (except those commonly regarded as nuts like brazil, cashew)
  */
 
 interface FvnEntry {
@@ -37,7 +40,7 @@ const FVN_DATABASE: FvnEntry[] = [
       'sultana', 'tangerine', 'watermelon',
       // Generic terms
       'fruit', 'fruits', 'berry', 'berries', 'citrus',
-      'dried fruit', 'fruit puree', 'fruit concentrate', 'fruit juice',
+      'dried fruit', 'fruit puree', 'fruit juice',
       'apple juice', 'orange juice', 'lemon juice', 'lime juice',
       'grape juice', 'pineapple juice', 'cranberry juice',
     ],
@@ -60,7 +63,7 @@ const FVN_DATABASE: FvnEntry[] = [
       'tomato puree', 'tomato paste', 'tomato sauce', 'passata',
     ],
   },
-  // ── Nuts & seeds ──
+  // ── Nuts (commonly called nuts — seeds are excluded separately) ──
   {
     category: 'nut',
     keywords: [
@@ -68,8 +71,6 @@ const FVN_DATABASE: FvnEntry[] = [
       'peanut', 'pecan', 'pine nut', 'pistachio', 'walnut',
       'nut', 'nuts', 'mixed nuts', 'nut butter', 'peanut butter',
       'almond butter', 'almond milk', 'coconut milk', 'coconut cream',
-      'seed', 'seeds', 'sesame', 'sunflower seed', 'pumpkin seed',
-      'flaxseed', 'linseed', 'chia seed', 'hemp seed', 'poppy seed',
     ],
   },
   // ── Legumes (count as vegetables in NPM) ──
@@ -97,28 +98,75 @@ function normalise(name: string): string {
 }
 
 /**
+ * Detect the scoring form of an ingredient based on its name.
+ *
+ * Per UK NPM 2011 guidance:
+ * - Dried fruit/veg and concentrated tomato puree count at weight × 2
+ * - Fruit powders, leathers, crystals, and concentrated juices (used as sugar) are excluded
+ * - Fresh/frozen/tinned/100% juice count at face weight
+ */
+function detectForm(name: string, isFvn: boolean, category: FvnCategory): FvnForm {
+  if (!isFvn) return 'none';
+  const n = name.toLowerCase();
+
+  // 1. Excluded forms (highly processed)
+  if (/\bpowders?\b/.test(n)) return 'excluded';
+  if (/\bleathers?\b/.test(n)) return 'excluded';
+  if (/\bcrystals?\b|\bcrystalline\b/.test(n)) return 'excluded';
+  if (/\bflakes?\b/.test(n) && !n.includes('coconut')) return 'excluded';
+
+  // "concentrate" as a noun (juice concentrate, fruit concentrate) → excluded
+  // BUT "from concentrate" → fresh (it's reconstituted 100% juice)
+  if (/\bconcentrate[ds]?\b/.test(n) && !/from concentrate/.test(n)) {
+    // Exception: concentrated tomato puree IS counted (×2 per guidance)
+    if (n.includes('tomato') && (n.includes('puree') || n.includes('paste'))) {
+      return 'dried';
+    }
+    return 'excluded';
+  }
+
+  // 2. Dried forms (×2)
+  if (/\bdried\b/.test(n)) return 'dried';
+  if (/\bdesiccated\b/.test(n)) return 'dried';
+  if (/\bdehydrated\b/.test(n)) return 'dried';
+  // Inherently dried fruit
+  if (/\b(raisin|sultana|currant|prune|date)s?\b/.test(n)) return 'dried';
+  // Tomato paste / puree → per guidance, concentrated tomato puree is ×2
+  if (n.includes('tomato') && (n.includes('paste') || n.includes('puree'))) {
+    return 'dried';
+  }
+
+  // 3. Nut form (category-driven)
+  if (category === 'nut') return 'nut';
+
+  // 4. Default FVN → fresh (includes fresh/frozen/tinned/100% juice/purees)
+  return 'fresh';
+}
+
+/**
  * Classify a single ingredient as FVN or not.
  *
  * Uses substring matching against the FVN keyword database.
- * Returns the category and whether it counts as FVN.
+ * Returns the category, form, and whether it counts as FVN.
  */
-export function classifyIngredient(name: string): { isFvn: boolean; category: FvnCategory; recognition: FvnRecognition } {
+export function classifyIngredient(name: string): { isFvn: boolean; category: FvnCategory; recognition: FvnRecognition; form: FvnForm } {
   const normalised = normalise(name);
 
-  // Check against exclusions first (potatoes, grains, etc.)
+  // Check against exclusions first (potatoes, grains, seeds, etc.)
   if (isExcluded(normalised)) {
-    return { isFvn: false, category: 'none', recognition: 'recognized_non_fvn' };
+    return { isFvn: false, category: 'none', recognition: 'recognized_non_fvn', form: 'none' };
   }
 
   for (const entry of FVN_DATABASE) {
     for (const keyword of entry.keywords) {
       if (normalised.includes(keyword) || keyword.includes(normalised)) {
-        return { isFvn: true, category: entry.category, recognition: 'recognized_fvn' };
+        const form = detectForm(name, true, entry.category);
+        return { isFvn: true, category: entry.category, recognition: 'recognized_fvn', form };
       }
     }
   }
 
-  return { isFvn: false, category: 'none', recognition: 'unrecognized' };
+  return { isFvn: false, category: 'none', recognition: 'unrecognized', form: 'none' };
 }
 
 /**
@@ -128,7 +176,7 @@ export function classifyIngredient(name: string): { isFvn: boolean; category: Fv
 export function classifyWithOverrides(
   name: string,
   overrides: FvnOverride[]
-): { isFvn: boolean; category: FvnCategory; recognition: FvnRecognition } {
+): { isFvn: boolean; category: FvnCategory; recognition: FvnRecognition; form: FvnForm } {
   const normalised = normalise(name);
 
   // Check exact match in learned overrides
@@ -138,6 +186,7 @@ export function classifyWithOverrides(
         isFvn: override.isFvn,
         category: (override.isFvn ? override.category : 'none') as FvnCategory,
         recognition: override.isFvn ? 'recognized_fvn' : 'recognized_non_fvn',
+        form: override.form ?? (override.isFvn ? 'fresh' : 'none'),
       };
     }
   }
@@ -149,6 +198,8 @@ export function classifyWithOverrides(
 /** Items that look like they could match but are NOT FVN */
 const EXCLUSIONS = [
   'potato', 'potatoes', 'chips', 'french fries', 'crisps',
+  // Starchy vegetables (per 5-a-day definition)
+  'yam', 'yams', 'cassava', 'plantain', 'plantains',
   'wheat', 'flour', 'corn flour', 'cornflour', 'cornstarch', 'corn starch',
   'rice', 'oat', 'oats', 'barley', 'rye', 'millet', 'quinoa', 'buckwheat',
   'bread', 'pasta', 'noodle', 'cereal',
@@ -163,9 +214,19 @@ const EXCLUSIONS = [
   'water', 'stock',
   'gelatine', 'gelatin',
   'chocolate', 'cocoa',
+  // Seeds (per guidance: seeds are NOT included unless commonly called nuts)
+  'seed', 'seeds', 'sesame', 'sesame seed', 'sunflower seed', 'pumpkin seed',
+  'flaxseed', 'linseed', 'chia seed', 'chia seeds', 'hemp seed', 'poppy seed',
 ];
 
 function isExcluded(normalised: string): boolean {
+  // Any ingredient ending in "seed" or "seeds" is excluded
+  // (seeds are NOT FVN unless commonly called nuts like brazil/cashew/pine — those
+  // are matched via the nut keywords BEFORE this function runs)
+  if (/\bseeds?$/.test(normalised)) {
+    return true;
+  }
+
   // Exact match or the normalised name starts with an exclusion
   for (const excl of EXCLUSIONS) {
     if (normalised === excl || normalised.startsWith(excl + ' ')) {
@@ -175,17 +236,25 @@ function isExcluded(normalised: string): boolean {
   return false;
 }
 
+/** Get the scoring multiplier for a form */
+function formMultiplier(form: FvnForm): number {
+  if (form === 'dried') return 2;
+  if (form === 'excluded' || form === 'none') return 0;
+  return 1; // fresh, nut
+}
+
 /**
  * Classify a list of ingredients and calculate the total FVN percentage.
+ * Applies the form multiplier: dried fruit/veg and concentrated tomato puree count × 2.
  */
 export function calculateFvnFromIngredients(
   ingredients: Array<{ name: string; proportion: number }>
-): { fvnPercentage: number; classifications: Array<{ name: string; isFvn: boolean; category: FvnCategory }> } {
+): { fvnPercentage: number; classifications: Array<{ name: string; isFvn: boolean; category: FvnCategory; form: FvnForm }> } {
   let fvnPercentage = 0;
   const classifications = ingredients.map((ing) => {
     const result = classifyIngredient(ing.name);
     if (result.isFvn) {
-      fvnPercentage += ing.proportion;
+      fvnPercentage += ing.proportion * formMultiplier(result.form);
     }
     return { name: ing.name, ...result };
   });
@@ -238,6 +307,7 @@ export function parseAndClassifyIngredients(rawText: string): ParsedIngredient[]
       isFvn: result.isFvn,
       category: result.category,
       recognition: result.recognition,
+      form: result.form,
     };
   }).filter((item): item is ParsedIngredient => item !== null);
 }

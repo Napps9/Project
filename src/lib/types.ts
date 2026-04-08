@@ -53,6 +53,7 @@ export interface ParsedIngredientState {
   isFvn: boolean;
   category: string;
   recognition: FvnRecognition;
+  form: FvnForm;
   userVote: 'up' | 'down' | null;
 }
 
@@ -72,6 +73,7 @@ export interface FvnOverride {
   name: string;
   isFvn: boolean;
   category: string;
+  form: FvnForm;
   updatedAt: string;
 }
 
@@ -81,10 +83,21 @@ export type FvnCategory = 'fruit' | 'vegetable' | 'nut' | 'legume' | 'none';
 
 export type FvnRecognition = 'recognized_fvn' | 'recognized_non_fvn' | 'unrecognized';
 
+/**
+ * The form of an FVN ingredient, which determines its scoring weight:
+ * - fresh: fresh/frozen/tinned/100% juice → weight × 1
+ * - dried: dried fruit/veg or concentrated tomato puree → weight × 2
+ * - nut: nuts (commonly called nuts) → weight × 1
+ * - excluded: powders, leathers, concentrates → weight × 0 (not counted)
+ * - none: not FVN at all
+ */
+export type FvnForm = 'fresh' | 'dried' | 'nut' | 'excluded' | 'none';
+
 export interface ParsedIngredient {
   name: string;
   proportion: number;
   isFvn: boolean;
   category: FvnCategory;
   recognition: FvnRecognition;
+  form: FvnForm;
 }

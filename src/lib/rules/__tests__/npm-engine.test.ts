@@ -130,10 +130,12 @@ describe('classifyIngredient', () => {
     expect(classifyIngredient('Tomato Puree').isFvn).toBe(true);
   });
 
-  it('classifies nuts and seeds', () => {
+  it('classifies nuts (but not plain seeds) as FVN', () => {
     expect(classifyIngredient('Almonds').isFvn).toBe(true);
     expect(classifyIngredient('Peanut Butter').isFvn).toBe(true);
-    expect(classifyIngredient('Chia Seeds').isFvn).toBe(true);
+    expect(classifyIngredient('Hazelnuts').isFvn).toBe(true);
+    // Seeds that are not commonly called nuts are NOT FVN per UK NPM 2011
+    expect(classifyIngredient('Chia Seeds').isFvn).toBe(false);
   });
 
   it('classifies legumes as FVN', () => {
@@ -384,5 +386,188 @@ describe('parseAndClassifyIngredients', () => {
     // Flavouring should be unrecognized
     const flavouring = result.find((r) => r.name.toLowerCase().includes('flavouring'));
     expect(flavouring?.recognition).toBe('unrecognized');
+  });
+});
+
+// ── Form detection (NPM 2011 technical guidance) ──
+
+describe('classifyIngredient form detection', () => {
+  it('detects fresh form for plain fruit/veg', () => {
+    expect(classifyIngredient('Apple').form).toBe('fresh');
+    expect(classifyIngredient('Carrot').form).toBe('fresh');
+    expect(classifyIngredient('Banana').form).toBe('fresh');
+  });
+
+  it('detects dried form for explicitly dried fruit', () => {
+    expect(classifyIngredient('Dried Apricot').form).toBe('dried');
+    expect(classifyIngredient('Dried Mango').form).toBe('dried');
+    expect(classifyIngredient('Dried Apple').form).toBe('dried');
+  });
+
+  it('detects dried form for inherently dried fruit (raisins, sultanas, prunes)', () => {
+    expect(classifyIngredient('Raisins').form).toBe('dried');
+    expect(classifyIngredient('Sultanas').form).toBe('dried');
+    expect(classifyIngredient('Prunes').form).toBe('dried');
+    expect(classifyIngredient('Currants').form).toBe('dried');
+  });
+
+  it('detects dried form for concentrated tomato puree', () => {
+    expect(classifyIngredient('Tomato Puree').form).toBe('dried');
+    expect(classifyIngredient('Tomato Paste').form).toBe('dried');
+    expect(classifyIngredient('Concentrated Tomato Puree').form).toBe('dried');
+  });
+
+  it('detects dried form for desiccated coconut', () => {
+    expect(classifyIngredient('Desiccated Coconut').form).toBe('dried');
+  });
+
+  it('detects excluded form for fruit powders', () => {
+    const apple = classifyIngredient('Apple Powder');
+    expect(apple.isFvn).toBe(true);
+    expect(apple.form).toBe('excluded');
+  });
+
+  it('detects excluded form for fruit leathers', () => {
+    const leather = classifyIngredient('Fruit Leather');
+    expect(leather.isFvn).toBe(true);
+    expect(leather.form).toBe('excluded');
+  });
+
+  it('detects excluded form for juice concentrates (not "from concentrate")', () => {
+    expect(classifyIngredient('Apple Juice Concentrate').form).toBe('excluded');
+    expect(classifyIngredient('Concentrated Orange Juice').form).toBe('excluded');
+  });
+
+  it('keeps "from concentrate" juice as fresh (reconstituted 100% juice)', () => {
+    expect(classifyIngredient('Orange Juice From Concentrate').form).toBe('fresh');
+  });
+
+  it('detects nut form for actual nuts', () => {
+    expect(classifyIngredient('Almonds').form).toBe('nut');
+    expect(classifyIngredient('Brazil Nut').form).toBe('nut');
+    expect(classifyIngredient('Cashew').form).toBe('nut');
+    expect(classifyIngredient('Pine Nut').form).toBe('nut');
+  });
+});
+
+// ── Seed & starchy vegetable exclusions ──
+
+describe('seed and starchy veg exclusions', () => {
+  it('excludes seeds that are not commonly called nuts', () => {
+    expect(classifyIngredient('Chia Seeds').isFvn).toBe(false);
+    expect(classifyIngredient('Sunflower Seeds').isFvn).toBe(false);
+    expect(classifyIngredient('Sesame Seeds').isFvn).toBe(false);
+    expect(classifyIngredient('Pumpkin Seeds').isFvn).toBe(false);
+    expect(classifyIngredient('Flaxseed').isFvn).toBe(false);
+    expect(classifyIngredient('Poppy Seeds').isFvn).toBe(false);
+  });
+
+  it('still includes nuts that are technically seeds (brazil, cashew, pine)', () => {
+    expect(classifyIngredient('Brazil Nut').isFvn).toBe(true);
+    expect(classifyIngredient('Cashew').isFvn).toBe(true);
+    expect(classifyIngredient('Pine Nut').isFvn).toBe(true);
+  });
+
+  it('excludes yams and other starchy vegetables', () => {
+    expect(classifyIngredient('Yam').isFvn).toBe(false);
+    expect(classifyIngredient('Yams').isFvn).toBe(false);
+    expect(classifyIngredient('Cassava').isFvn).toBe(false);
+    expect(classifyIngredient('Plantain').isFvn).toBe(false);
+  });
+});
+
+// ── FVN % with form multiplier ──
+
+describe('calculateFvnFromIngredients with form multiplier', () => {
+  it('applies ×2 multiplier to dried fruit', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Dried Apricot', proportion: 10 },
+    ]);
+    expect(result.fvnPercentage).toBe(20);
+  });
+
+  it('applies ×2 multiplier to raisins (inherently dried)', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Raisins', proportion: 15 },
+      { name: 'Sugar', proportion: 85 },
+    ]);
+    expect(result.fvnPercentage).toBe(30);
+  });
+
+  it('applies ×2 multiplier to concentrated tomato puree', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Tomato Puree', proportion: 20 },
+      { name: 'Wheat Flour', proportion: 80 },
+    ]);
+    expect(result.fvnPercentage).toBe(40);
+  });
+
+  it('excludes fruit powders from FVN calculation', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Apple Powder', proportion: 20 },
+      { name: 'Sugar', proportion: 80 },
+    ]);
+    expect(result.fvnPercentage).toBe(0);
+  });
+
+  it('excludes fruit leathers from FVN calculation', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Fruit Leather', proportion: 15 },
+    ]);
+    expect(result.fvnPercentage).toBe(0);
+  });
+
+  it('excludes juice concentrates from FVN calculation', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Apple Juice Concentrate', proportion: 8 },
+      { name: 'Water', proportion: 92 },
+    ]);
+    expect(result.fvnPercentage).toBe(0);
+  });
+
+  it('caps FVN at 100% even when doubled', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Raisins', proportion: 60 }, // 60 × 2 = 120 → capped
+      { name: 'Sugar', proportion: 40 },
+    ]);
+    expect(result.fvnPercentage).toBe(100);
+  });
+
+  it('mixes fresh and dried correctly', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Apple', proportion: 50 },     // fresh: 50
+      { name: 'Raisins', proportion: 15 },   // dried: 30
+      { name: 'Sugar', proportion: 35 },     // 0
+    ]);
+    expect(result.fvnPercentage).toBe(80);
+  });
+});
+
+describe('full NPM engine with dried fruit', () => {
+  it('gives dried fruit the ×2 multiplier effect on score', () => {
+    const nutrition: NutritionData = {
+      energyKj: 1200, saturatedFatG: 2, totalSugarG: 30,
+      sodiumMg: 100, fibreAoacG: 3, proteinG: 3,
+    };
+    // 40% raisins alone should give 80% FVN → 2 FVN points
+    const result = calculateNpmScore(nutrition, [
+      { name: 'Raisins', proportion: 40 },
+      { name: 'Sugar', proportion: 60 },
+    ], false);
+    expect(result.fvnPercentage).toBe(80);
+    expect(result.cPoints.fruitVegNuts).toBe(2); // >60 but not >80
+  });
+
+  it('50% raisins scores 5 FVN points (100% effective)', () => {
+    const nutrition: NutritionData = {
+      energyKj: 1200, saturatedFatG: 2, totalSugarG: 30,
+      sodiumMg: 100, fibreAoacG: 3, proteinG: 3,
+    };
+    const result = calculateNpmScore(nutrition, [
+      { name: 'Raisins', proportion: 50 },
+      { name: 'Sugar', proportion: 50 },
+    ], false);
+    expect(result.fvnPercentage).toBe(100);
+    expect(result.cPoints.fruitVegNuts).toBe(5);
   });
 });

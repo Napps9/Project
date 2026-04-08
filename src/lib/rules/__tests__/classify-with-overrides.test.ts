@@ -4,8 +4,8 @@ import { FvnOverride } from '../../types';
 
 describe('classifyWithOverrides', () => {
   const overrides: FvnOverride[] = [
-    { name: 'xanthan gum', isFvn: false, category: 'none', updatedAt: '2024-01-01' },
-    { name: 'goji berry', isFvn: true, category: 'fruit', updatedAt: '2024-01-01' },
+    { name: 'xanthan gum', isFvn: false, category: 'none', form: 'none', updatedAt: '2024-01-01' },
+    { name: 'goji berry', isFvn: true, category: 'fruit', form: 'fresh', updatedAt: '2024-01-01' },
   ];
 
   it('returns override classification for exact match', () => {
@@ -36,10 +36,18 @@ describe('classifyWithOverrides', () => {
 
   it('override can flip a built-in FVN ingredient to non-FVN', () => {
     const flipOverrides: FvnOverride[] = [
-      { name: 'apple', isFvn: false, category: 'none', updatedAt: '2024-01-01' },
+      { name: 'apple', isFvn: false, category: 'none', form: 'none', updatedAt: '2024-01-01' },
     ];
     const result = classifyWithOverrides('Apple', flipOverrides);
     expect(result.isFvn).toBe(false);
     expect(result.recognition).toBe('recognized_non_fvn');
+  });
+
+  it('override carries form through (e.g., dried)', () => {
+    const driedOverrides: FvnOverride[] = [
+      { name: 'goji berry', isFvn: true, category: 'fruit', form: 'dried', updatedAt: '2024-01-01' },
+    ];
+    const result = classifyWithOverrides('Goji Berry', driedOverrides);
+    expect(result.form).toBe('dried');
   });
 });

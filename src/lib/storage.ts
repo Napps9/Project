@@ -1,4 +1,4 @@
-import { SavedProduct, NutritionData, ParsedIngredientState, ScoreResult, FvnOverride } from './types';
+import { SavedProduct, NutritionData, ParsedIngredientState, ScoreResult, FvnOverride, FvnForm } from './types';
 
 const STORAGE_KEY = 'npm-scorer:products';
 const FVN_OVERRIDES_KEY = 'npm-scorer:fvn-overrides';
@@ -78,10 +78,14 @@ export function saveFvnOverridesFromIngredients(ingredients: ParsedIngredientSta
 
     // Save if: auto-FVN (confirmed or rejected), or user explicitly promoted
     if (ing.isFvn || ing.userVote === 'up') {
+      const form: FvnForm = effectiveFvn
+        ? (ing.form === 'excluded' || ing.form === 'none' ? 'fresh' : ing.form)
+        : 'none';
       overrideMap.set(normalised, {
         name: normalised,
         isFvn: effectiveFvn,
         category: effectiveFvn ? ing.category : 'none',
+        form,
         updatedAt: now,
       });
     }
@@ -92,6 +96,7 @@ export function saveFvnOverridesFromIngredients(ingredients: ParsedIngredientSta
         name: normalised,
         isFvn: false,
         category: 'none',
+        form: 'none',
         updatedAt: now,
       });
     }

@@ -76,9 +76,17 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
     try {
       const validIngredients = ingredients.filter((i) => i.name.trim());
       const fvnPercentage = Math.min(
-        validIngredients
-          .filter((ing) => (ing.isFvn && ing.userVote !== 'down') || (!ing.isFvn && ing.userVote === 'up'))
-          .reduce((sum, ing) => sum + ing.proportion, 0),
+        validIngredients.reduce((sum, ing) => {
+          // Excluded forms (powders, leathers, concentrates) don't count
+          // unless user explicitly promoted via thumbs up
+          const effectivelyFvn =
+            (ing.isFvn && ing.form !== 'excluded' && ing.userVote !== 'down') ||
+            (ing.userVote === 'up');
+          if (!effectivelyFvn) return sum;
+          // Dried fruit/veg and concentrated tomato puree count at weight × 2
+          const multiplier = ing.form === 'dried' ? 2 : 1;
+          return sum + ing.proportion * multiplier;
+        }, 0),
         100
       );
 

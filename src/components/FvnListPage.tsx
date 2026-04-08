@@ -62,6 +62,7 @@ export default function FvnListPage() {
                 <tr>
                   <th className="text-left px-4 py-2 font-medium text-gray-600">Name</th>
                   <th className="text-left px-4 py-2 font-medium text-gray-600">Category</th>
+                  <th className="text-left px-4 py-2 font-medium text-gray-600">Form</th>
                   <th className="text-left px-4 py-2 font-medium text-gray-600">Updated</th>
                   <th className="w-16"></th>
                 </tr>
@@ -73,6 +74,17 @@ export default function FvnListPage() {
                     <td className="px-4 py-2">
                       <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700">
                         {item.category}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded ${
+                          item.form === 'dried'
+                            ? 'bg-orange-100 text-orange-700 font-medium'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {item.form === 'dried' ? 'dried \u00D72' : item.form}
                       </span>
                     </td>
                     <td className="px-4 py-2 text-gray-400 text-xs">

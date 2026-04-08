@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ParsedIngredientState } from '@/lib/types';
+import { FvnForm, ParsedIngredientState } from '@/lib/types';
 import { loadFvnOverrides } from '@/lib/storage';
 
 export type { ParsedIngredientState };
@@ -82,30 +82,52 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
     ]);
   };
 
-  const handleThumbsDown = (index: number) => {
-    const ing = ingredients[index];
-    // Toggle: if already down, clear the vote
-    const newVote = ing.userVote === 'down' ? null : 'down' as const;
-    updateIngredient(index, { userVote: newVote });
-  };
-
+  /** Promote ingredient to FVN (thumbs up) */
   const handleThumbsUp = (index: number) => {
     const ing = ingredients[index];
-    // Toggle: if already up, clear the vote
-    const newVote = ing.userVote === 'up' ? null : 'up' as const;
-    // When promoting a non-FVN/excluded ingredient, default form to 'fresh' so it counts
-    const updates: Partial<ParsedIngredientState> = { userVote: newVote };
-    if (newVote === 'up' && (!ing.isFvn || ing.form === 'excluded' || ing.form === 'none')) {
-      updates.form = 'fresh';
+    if (isEffectiveFvn(ing)) return; // already FVN, no-op
+    const updates: Partial<ParsedIngredientState> = {
+      userVote: 'up' as const,
+      isFvn: true,
+      recognition: 'recognized_fvn' as const,
+      form: (ing.form === 'excluded' || ing.form === 'none') ? 'fresh' : ing.form,
+    };
+    // Set a default category if the ingredient had none
+    if (!ing.category || ing.category === 'none') {
+      updates.category = 'fruit';
     }
     updateIngredient(index, updates);
   };
 
-  /** Is this ingredient effectively treated as FVN? */
+  /** Reject ingredient from FVN (thumbs down) */
+  const handleThumbsDown = (index: number) => {
+    if (!isEffectiveFvn(ingredients[index])) return; // already non-FVN, no-op
+    updateIngredient(index, { userVote: 'down' as const });
+  };
+
+  /** Change the FVN category for an ingredient (e.g. nut → fruit) */
+  const handleCategoryChange = (index: number, newCategory: string) => {
+    const defaultForm: FvnForm = newCategory === 'nut' ? 'nut' : 'fresh';
+    updateIngredient(index, {
+      category: newCategory,
+      form: defaultForm,
+      isFvn: true,
+      recognition: 'recognized_fvn' as const,
+      userVote: 'up' as const,
+    });
+  };
+
+  /** Change the FVN form for an ingredient (fresh vs dried ×2) */
+  const handleFormChange = (index: number, newForm: string) => {
+    updateIngredient(index, {
+      form: newForm as FvnForm,
+      userVote: 'up' as const,
+    });
+  };
+
+  /** Is this ingredient effectively treated as FVN (auto + user intent)? */
   const isEffectiveFvn = (ing: ParsedIngredientState) => {
-    // Auto-classified FVN, not excluded, not thumbs-downed
     if (ing.isFvn && ing.form !== 'excluded' && ing.userVote !== 'down') return true;
-    // User-promoted (thumbs up) any ingredient
     if (ing.userVote === 'up') return true;
     return false;
   };
@@ -153,66 +175,101 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        {ingredients.map((ing, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 w-5">{i + 1}.</span>
-            <input
-              type="text"
-              value={ing.name}
-              onChange={(e) => updateIngredient(i, { name: e.target.value })}
-              className="flex-1 border rounded px-2 py-1.5 text-sm"
-            />
-            <input
-              type="number"
-              value={ing.proportion || ''}
-              onChange={(e) => updateIngredient(i, { proportion: parseFloat(e.target.value) || 0 })}
-              className="w-20 border rounded px-2 py-1.5 text-sm text-right"
-              min={0}
-              max={100}
-              step={0.1}
-              placeholder="%"
-            />
-            <span className="text-xs text-gray-400">%</span>
+        {ingredients.map((ing, i) => {
+          const effectiveFvn = isEffectiveFvn(ing);
+          return (
+            <div key={i} className="flex items-center gap-2">
+              <span className="text-xs text-gray-400 w-5">{i + 1}.</span>
+              <input
+                type="text"
+                value={ing.name}
+                onChange={(e) => updateIngredient(i, { name: e.target.value })}
+                className="flex-1 border rounded px-2 py-1.5 text-sm"
+              />
+              <input
+                type="number"
+                value={ing.proportion || ''}
+                onChange={(e) => updateIngredient(i, { proportion: parseFloat(e.target.value) || 0 })}
+                className="w-20 border rounded px-2 py-1.5 text-sm text-right"
+                min={0}
+                max={100}
+                step={0.1}
+                placeholder="%"
+              />
+              <span className="text-xs text-gray-400">%</span>
 
-            <RecognitionBadge ingredient={ing} isEffective={isEffectiveFvn(ing)} />
+              {/* FVN classification area */}
+              {ing.name.trim() && (
+                effectiveFvn ? (
+                  /* Editable category + form selects for FVN ingredients */
+                  <div className="flex items-center gap-1">
+                    <select
+                      value={ing.category !== 'none' ? ing.category : 'fruit'}
+                      onChange={(e) => handleCategoryChange(i, e.target.value)}
+                      className="text-xs border border-green-200 rounded px-1 py-0.5 bg-green-50 text-green-800"
+                      title="FVN category"
+                    >
+                      <option value="fruit">Fruit</option>
+                      <option value="vegetable">Vegetable</option>
+                      <option value="nut">Nut</option>
+                      <option value="legume">Legume</option>
+                    </select>
+                    {(ing.category === 'fruit' || ing.category === 'vegetable') && (
+                      <select
+                        value={ing.form === 'dried' ? 'dried' : 'fresh'}
+                        onChange={(e) => handleFormChange(i, e.target.value)}
+                        className="text-xs border border-green-200 rounded px-1 py-0.5 bg-green-50 text-green-800"
+                        title="Scoring form"
+                      >
+                        <option value="fresh">fresh</option>
+                        <option value="dried">dried ×2</option>
+                      </select>
+                    )}
+                  </div>
+                ) : (
+                  /* Static badge for non-FVN ingredients */
+                  <NonFvnBadge ingredient={ing} />
+                )
+              )}
 
-            {/* Thumbs up/down */}
-            {ing.name.trim() && (
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() => handleThumbsUp(i)}
-                  className={`p-1 rounded transition-colors ${
-                    isEffectiveFvn(ing)
-                      ? 'text-green-600 bg-green-50'
-                      : 'text-gray-300 hover:text-green-500'
-                  }`}
-                  title="Confirm as FVN"
-                >
-                  <ThumbsUpIcon />
-                </button>
-                <button
-                  onClick={() => handleThumbsDown(i)}
-                  className={`p-1 rounded transition-colors ${
-                    !isEffectiveFvn(ing) && (ing.isFvn || ing.userVote === 'down')
-                      ? 'text-red-600 bg-red-50'
-                      : 'text-gray-300 hover:text-red-500'
-                  }`}
-                  title="Reject as FVN"
-                >
-                  <ThumbsDownIcon />
-                </button>
-              </div>
-            )}
+              {/* Thumbs — one is always active, reflecting current FVN state */}
+              {ing.name.trim() && (
+                <div className="flex items-center gap-0.5">
+                  <button
+                    onClick={() => handleThumbsUp(i)}
+                    className={`p-1 rounded transition-colors ${
+                      effectiveFvn
+                        ? 'text-green-600 bg-green-50'
+                        : 'text-gray-300 hover:text-green-500'
+                    }`}
+                    title={effectiveFvn ? 'Counted as FVN' : 'Mark as FVN'}
+                  >
+                    <ThumbsUpIcon />
+                  </button>
+                  <button
+                    onClick={() => handleThumbsDown(i)}
+                    className={`p-1 rounded transition-colors ${
+                      !effectiveFvn
+                        ? 'text-red-500 bg-red-50'
+                        : 'text-gray-300 hover:text-red-500'
+                    }`}
+                    title={effectiveFvn ? 'Exclude from FVN' : 'Not counted as FVN'}
+                  >
+                    <ThumbsDownIcon />
+                  </button>
+                </div>
+              )}
 
-            <button
-              onClick={() => removeIngredient(i)}
-              className="text-red-400 hover:text-red-600 text-sm px-1"
-              title="Remove"
-            >
-              x
-            </button>
-          </div>
-        ))}
+              <button
+                onClick={() => removeIngredient(i)}
+                className="text-red-400 hover:text-red-600 text-sm px-1"
+                title="Remove"
+              >
+                x
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       <button onClick={addIngredient} className="text-sm text-blue-600 hover:text-blue-800">
@@ -222,48 +279,25 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
   );
 }
 
-function formLabel(category: string, form: string): string {
-  if (form === 'dried') return `dried ${category} \u00D72`;
-  if (form === 'nut') return 'nut';
-  return category;
-}
-
-function RecognitionBadge({ ingredient, isEffective }: { ingredient: ParsedIngredientState; isEffective: boolean }) {
-  if (!ingredient.name.trim()) return null;
-
-  // Auto-classified FVN but detected as excluded form (powder/leather/concentrate)
-  if (ingredient.isFvn && ingredient.form === 'excluded' && ingredient.userVote !== 'up') {
+/** Badge shown for non-FVN ingredients (recognized non-FVN, unknown, excluded, rejected) */
+function NonFvnBadge({ ingredient }: { ingredient: ParsedIngredientState }) {
+  // Auto-FVN but excluded form (powder/leather/concentrate)
+  if (ingredient.isFvn && ingredient.form === 'excluded') {
     return (
-      <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium" title="Processed form excluded per UK NPM guidance">
+      <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700" title="Processed form excluded per UK NPM guidance">
         excluded (processed)
       </span>
     );
   }
-
-  // User promoted a non-FVN/unknown → show as FVN override
-  if (isEffective && !ingredient.isFvn) {
-    return (
-      <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700">
-        FVN (override)
-      </span>
-    );
-  }
-  // User thumbs-downed an auto-FVN ingredient
-  if (!isEffective && ingredient.isFvn && ingredient.form !== 'excluded') {
+  // Auto-FVN but user rejected it
+  if (ingredient.isFvn && ingredient.userVote === 'down') {
     return (
       <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-600 line-through">
-        FVN ({formLabel(ingredient.category, ingredient.form)})
+        FVN ({ingredient.category})
       </span>
     );
   }
-
   switch (ingredient.recognition) {
-    case 'recognized_fvn':
-      return (
-        <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700">
-          FVN ({formLabel(ingredient.category, ingredient.form)})
-        </span>
-      );
     case 'recognized_non_fvn':
       return (
         <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
@@ -276,6 +310,8 @@ function RecognitionBadge({ ingredient, isEffective }: { ingredient: ParsedIngre
           Unknown — verify
         </span>
       );
+    default:
+      return null;
   }
 }
 

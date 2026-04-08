@@ -73,33 +73,24 @@ export function saveFvnOverridesFromIngredients(ingredients: ParsedIngredientSta
     if (!ing.name.trim()) continue;
     const normalised = normaliseName(ing.name);
 
-    // Determine effective FVN status based on auto-classification + user vote
-    const effectiveFvn = ing.isFvn ? ing.userVote !== 'down' : ing.userVote === 'up';
+    // Determine effective FVN status (mirrors isEffectiveFvn logic in UI)
+    const effectiveFvn =
+      (ing.isFvn && ing.form !== 'excluded' && ing.userVote !== 'down') ||
+      (ing.userVote === 'up');
 
-    // Save if: auto-FVN (confirmed or rejected), or user explicitly promoted
-    if (ing.isFvn || ing.userVote === 'up') {
-      const form: FvnForm = effectiveFvn
-        ? (ing.form === 'excluded' || ing.form === 'none' ? 'fresh' : ing.form)
-        : 'none';
-      overrideMap.set(normalised, {
-        name: normalised,
-        isFvn: effectiveFvn,
-        category: effectiveFvn ? ing.category : 'none',
-        form,
-        updatedAt: now,
-      });
-    }
+    const form: FvnForm = effectiveFvn
+      ? (ing.form === 'excluded' || ing.form === 'none' ? 'fresh' : ing.form)
+      : 'none';
 
-    // Also save explicit rejections of auto-FVN
-    if (ing.isFvn && ing.userVote === 'down') {
-      overrideMap.set(normalised, {
-        name: normalised,
-        isFvn: false,
-        category: 'none',
-        form: 'none',
-        updatedAt: now,
-      });
-    }
+    // Save ALL named ingredients — creates a comprehensive ingredient dictionary.
+    // Duplicates are resolved by normalized name (last-write wins).
+    overrideMap.set(normalised, {
+      name: normalised,
+      isFvn: effectiveFvn,
+      category: effectiveFvn ? ing.category : 'none',
+      form,
+      updatedAt: now,
+    });
   }
 
   localStorage.setItem(FVN_OVERRIDES_KEY, JSON.stringify(Array.from(overrideMap.values())));

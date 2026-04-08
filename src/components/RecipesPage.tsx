@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { SavedProduct, ParsedIngredientState, FvnForm } from '@/lib/types';
 import { loadProducts, saveProduct, saveFvnOverridesFromIngredients, deleteProduct, loadFvnOverrides } from '@/lib/storage';
 import { parseCsvFile, getCsvTemplate, CsvImportRow } from '@/lib/csv-importer';
+import { parsePdfFile } from '@/lib/pdf-importer';
 import { parseAndClassifyIngredients } from '@/lib/rules/fvn-classifier';
 import { calculateNpmScoreFromFvn } from '@/lib/rules/npm-engine';
 import ScoreBadge from './ScoreBadge';
@@ -110,8 +111,11 @@ export default function RecipesPage() {
     setImportProgress(null);
 
     try {
-      const text = await file.text();
-      const parsed = parseCsvFile(text);
+      const isPdf =
+        file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      const parsed = isPdf
+        ? await parsePdfFile(file)
+        : parseCsvFile(await file.text());
 
       if (parsed.rows.length === 0) {
         setImportSummary({
@@ -269,12 +273,12 @@ export default function RecipesPage() {
             disabled={importing}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
           >
-            {importing ? 'Importing...' : 'Import CSV'}
+            {importing ? 'Importing...' : 'Import CSV / PDF'}
           </button>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,text/csv,.pdf,application/pdf"
             onChange={handleFileChange}
             className="hidden"
           />

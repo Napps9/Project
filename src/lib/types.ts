@@ -35,10 +35,27 @@ export interface CPointsBreakdown {
   total: number;
 }
 
+/**
+ * Raw weight shares of the three NPM 2011 FVN buckets.
+ * Sum of all three equals the sum of input proportions (≈100 when complete).
+ * These are pre-multiplier weights; the ×2 on `driedAndConcentrated` is
+ * applied inside the effective `fvnPercentage` formula, not here.
+ */
+export interface FvnBreakdown {
+  /** Fresh/frozen/tinned/juiced/puréed fruit & veg + beans/pulses/coconut/nuts */
+  standardFvn: number;
+  /** Dried fruit/veg + concentrated tomato purée (counted ×2 in scoring) */
+  driedAndConcentrated: number;
+  /** Everything else */
+  other: number;
+}
+
 export interface ScoreResult {
   aPoints: APointsBreakdown;
   cPoints: CPointsBreakdown;
   fvnPercentage: number;
+  /** Optional — present on results computed from an ingredient list. */
+  fvnBreakdown?: FvnBreakdown;
   totalScore: number;
   isDrink: boolean;
   isHfss: boolean;

@@ -1,4 +1,4 @@
-import { FvnCategory, FvnRecognition, FvnForm, FvnOverride, ParsedIngredient } from '../types';
+import { FvnCategory, FvnRecognition, FvnForm, FvnOverride, ParsedIngredient, FvnBreakdown } from '../types';
 
 /**
  * FVN (Fruit, Vegetable & Nut) ingredient classifier.
@@ -269,30 +269,108 @@ function isExcluded(normalised: string): boolean {
   return false;
 }
 
-/** Get the scoring multiplier for a form */
-function formMultiplier(form: FvnForm): number {
-  if (form === 'dried') return 2;
-  if (form === 'excluded' || form === 'none') return 0;
-  return 1; // fresh, nut
+/**
+ * Route an FVN-classified ingredient into one of the three NPM 2011 buckets.
+ * Returns `null` for non-FVN / excluded / unrecognised (those go to `other`).
+ */
+function bucketForForm(isFvn: boolean, form: FvnForm): 'standard' | 'dried' | null {
+  if (!isFvn) return null;
+  if (form === 'fresh' || form === 'nut') return 'standard';
+  if (form === 'dried') return 'dried';
+  return null; // 'excluded' | 'none' → other
 }
 
 /**
- * Classify a list of ingredients and calculate the total FVN percentage.
- * Applies the form multiplier: dried fruit/veg and concentrated tomato puree count × 2.
+ * Apply the UK NPM 2011 FVN formula to pre-bucketed weights.
+ *
+ *   FVN% = (S + 2D) / (S + 2D + O) × 100
+ *
+ * where S = standard FVN weight, D = dried FVN + concentrated tomato purée
+ * weight, O = weight of every other ingredient.
+ *
+ * The ratio is mathematically ≤ 100; `Math.min(100, …)` is a float-safety floor.
+ * Returns 0 when the denominator is 0 (empty list or all zero-proportion input).
+ */
+function effectiveFvnPercentage(breakdown: FvnBreakdown): number {
+  const { standardFvn: S, driedAndConcentrated: D, other: O } = breakdown;
+  const denom = S + 2 * D + O;
+  if (denom <= 0) return 0;
+  return Math.min(100, ((S + 2 * D) / denom) * 100);
+}
+
+/**
+ * Classify a list of ingredients and calculate the NPM 2011 FVN percentage
+ * along with the three raw weight buckets (standard / dried+conc / other).
+ *
+ * Per UK NPM 2011 Technical Guidance:
+ *   FVN% = (S + 2D) / (S + 2D + O) × 100
+ * where dried fruit/veg and concentrated tomato purée contribute 2× to both
+ * numerator and denominator.
  */
 export function calculateFvnFromIngredients(
   ingredients: Array<{ name: string; proportion: number }>
-): { fvnPercentage: number; classifications: Array<{ name: string; isFvn: boolean; category: FvnCategory; form: FvnForm }> } {
-  let fvnPercentage = 0;
+): {
+  fvnPercentage: number;
+  breakdown: FvnBreakdown;
+  classifications: Array<{ name: string; isFvn: boolean; category: FvnCategory; form: FvnForm }>;
+} {
+  let standardFvn = 0;
+  let driedAndConcentrated = 0;
+  let other = 0;
+
   const classifications = ingredients.map((ing) => {
     const result = classifyIngredient(ing.name);
-    if (result.isFvn) {
-      fvnPercentage += ing.proportion * formMultiplier(result.form);
-    }
+    const bucket = bucketForForm(result.isFvn, result.form);
+    if (bucket === 'standard') standardFvn += ing.proportion;
+    else if (bucket === 'dried') driedAndConcentrated += ing.proportion;
+    else other += ing.proportion;
     return { name: ing.name, ...result };
   });
 
-  return { fvnPercentage: Math.min(fvnPercentage, 100), classifications };
+  const breakdown: FvnBreakdown = { standardFvn, driedAndConcentrated, other };
+  return {
+    fvnPercentage: effectiveFvnPercentage(breakdown),
+    breakdown,
+    classifications,
+  };
+}
+
+/**
+ * Compute FVN% and breakdown from pre-classified ingredient state (from the UI),
+ * honouring user overrides (`userVote: 'up' | 'down'`) and the current `form`
+ * selection. No re-classification — the UI has already classified.
+ *
+ * Used by the live summary in `IngredientPasteInput` and by the score
+ * submission path in `ProductForm` and `RecipesPage`.
+ */
+export function calculateFvnFromState(
+  ingredients: Array<{
+    proportion: number;
+    isFvn: boolean;
+    form: FvnForm;
+    userVote?: 'up' | 'down' | null;
+  }>
+): { fvnPercentage: number; breakdown: FvnBreakdown } {
+  let standardFvn = 0;
+  let driedAndConcentrated = 0;
+  let other = 0;
+
+  for (const ing of ingredients) {
+    const effectivelyFvn =
+      (ing.isFvn && ing.form !== 'excluded' && ing.userVote !== 'down') ||
+      ing.userVote === 'up';
+
+    if (effectivelyFvn && ing.form === 'dried') {
+      driedAndConcentrated += ing.proportion;
+    } else if (effectivelyFvn) {
+      standardFvn += ing.proportion;
+    } else {
+      other += ing.proportion;
+    }
+  }
+
+  const breakdown: FvnBreakdown = { standardFvn, driedAndConcentrated, other };
+  return { fvnPercentage: effectiveFvnPercentage(breakdown), breakdown };
 }
 
 /**

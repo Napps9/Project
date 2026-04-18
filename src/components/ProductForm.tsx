@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { NutritionData, SavedProduct, ScoreResult, ParsedIngredientState } from '@/lib/types';
 import { parseNutritionText } from '@/lib/nutrition-parser';
+import { calculateFvnFromState } from '@/lib/rules/fvn-classifier';
 import IngredientPasteInput from './IngredientPasteInput';
 import ScoreResultDisplay from './ScoreResult';
 import SaveProductDialog from './SaveProductDialog';
@@ -75,25 +76,12 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
     setLoading(true);
     try {
       const validIngredients = ingredients.filter((i) => i.name.trim());
-      const fvnPercentage = Math.min(
-        validIngredients.reduce((sum, ing) => {
-          // Excluded forms (powders, leathers, concentrates) don't count
-          // unless user explicitly promoted via thumbs up
-          const effectivelyFvn =
-            (ing.isFvn && ing.form !== 'excluded' && ing.userVote !== 'down') ||
-            (ing.userVote === 'up');
-          if (!effectivelyFvn) return sum;
-          // Dried fruit/veg and concentrated tomato puree count at weight × 2
-          const multiplier = ing.form === 'dried' ? 2 : 1;
-          return sum + ing.proportion * multiplier;
-        }, 0),
-        100
-      );
+      const { fvnPercentage, breakdown } = calculateFvnFromState(validIngredients);
 
       const res = await fetch('/api/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nutrition, fvnPercentage, isDrink }),
+        body: JSON.stringify({ nutrition, fvnPercentage, fvnBreakdown: breakdown, isDrink }),
       });
       if (!res.ok) {
         const err = await res.json();

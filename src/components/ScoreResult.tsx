@@ -36,6 +36,22 @@ export default function ScoreResult({ result }: Props) {
           </h4>
           <div className="space-y-1 text-sm">
             <Row label={`FVN (${fvnPercentage.toFixed(0)}%)`} value={cPoints.fruitVegNuts} max={5} />
+            {result.fvnBreakdown && (
+              <div className="ml-4 space-y-0.5 text-xs text-gray-500">
+                <div className="flex justify-between">
+                  <span>Standard FVN (fresh / nuts / pulses)</span>
+                  <span className="font-mono">{result.fvnBreakdown.standardFvn.toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between" title="Per UK NPM 2011, dried fruit/veg and concentrated tomato purée count double toward FVN%">
+                  <span>Dried + conc. tomato (&times;2)</span>
+                  <span className="font-mono">{result.fvnBreakdown.driedAndConcentrated.toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Other ingredients</span>
+                  <span className="font-mono">{result.fvnBreakdown.other.toFixed(1)}%</span>
+                </div>
+              </div>
+            )}
             <Row label="Fibre" value={cPoints.fibre} max={5} />
             <Row
               label="Protein"

@@ -7,7 +7,7 @@ import { SavedProduct, ParsedIngredientState, FvnForm } from '@/lib/types';
 import { loadProducts, saveProduct, saveFvnOverridesFromIngredients, deleteProduct, loadFvnOverrides } from '@/lib/storage';
 import { parseCsvFile, getCsvTemplate, CsvImportRow } from '@/lib/csv-importer';
 import { parsePdfFile } from '@/lib/pdf-importer';
-import { parseAndClassifyIngredients } from '@/lib/rules/fvn-classifier';
+import { parseAndClassifyIngredients, calculateFvnFromState } from '@/lib/rules/fvn-classifier';
 import { calculateNpmScoreFromFvn } from '@/lib/rules/npm-engine';
 import ScoreBadge from './ScoreBadge';
 
@@ -46,20 +46,11 @@ function processRow(row: CsvImportRow): SavedProduct {
     return { ...ing, userVote: null };
   });
 
-  // 3. Calculate FVN% with form multipliers
-  const fvnPercentage = Math.min(
-    ingredients.reduce((sum, ing) => {
-      const effective =
-        (ing.isFvn && ing.form !== 'excluded' && ing.userVote !== 'down') ||
-        ing.userVote === 'up';
-      if (!effective) return sum;
-      return sum + ing.proportion * (ing.form === 'dried' ? 2 : 1);
-    }, 0),
-    100
-  );
+  // 3. Calculate FVN% with form multipliers (NPM 2011 ratio formula)
+  const { fvnPercentage, breakdown } = calculateFvnFromState(ingredients);
 
   // 4. Score
-  const result = calculateNpmScoreFromFvn(row.nutrition, fvnPercentage, row.isDrink);
+  const result = calculateNpmScoreFromFvn(row.nutrition, fvnPercentage, row.isDrink, breakdown);
 
   // 5. Save
   return saveProduct({

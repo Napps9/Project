@@ -1,4 +1,4 @@
-import { NutritionData, IngredientInput, ScoreResult } from '../types';
+import { NutritionData, IngredientInput, ScoreResult, FvnBreakdown } from '../types';
 import { calculateAPoints, calculateCPoints } from './nutrient-scorer';
 import { calculateFvnFromIngredients } from './fvn-classifier';
 import {
@@ -20,8 +20,8 @@ export function calculateNpmScore(
   ingredients: IngredientInput[],
   isDrink: boolean
 ): ScoreResult {
-  // Step 1: Determine FVN percentage from ingredients
-  const { fvnPercentage } = calculateFvnFromIngredients(ingredients);
+  // Step 1: Determine FVN percentage + breakdown from ingredients
+  const { fvnPercentage, breakdown } = calculateFvnFromIngredients(ingredients);
 
   // Step 2: Calculate A and C points
   const aPoints = calculateAPoints(nutrition);
@@ -50,6 +50,7 @@ export function calculateNpmScore(
     aPoints,
     cPoints,
     fvnPercentage,
+    fvnBreakdown: breakdown,
     totalScore,
     isDrink,
     isHfss,
@@ -59,12 +60,18 @@ export function calculateNpmScore(
 
 /**
  * Quick score from nutrition data + pre-calculated FVN percentage.
- * Useful when FVN is already known (e.g., from stored product data).
+ * Useful when FVN is already known (e.g., from stored product data or from
+ * client-side calculation honouring user overrides).
+ *
+ * `breakdown` is optional — when supplied, it's attached to the result for
+ * display. Pass it through if the caller already has the three raw weight
+ * buckets (they can't be reconstructed from `fvnPercentage` alone).
  */
 export function calculateNpmScoreFromFvn(
   nutrition: NutritionData,
   fvnPercentage: number,
-  isDrink: boolean
+  isDrink: boolean,
+  breakdown?: FvnBreakdown
 ): ScoreResult {
   const aPoints = calculateAPoints(nutrition);
   const cPoints = calculateCPoints(nutrition, fvnPercentage);
@@ -86,6 +93,7 @@ export function calculateNpmScoreFromFvn(
     aPoints,
     cPoints,
     fvnPercentage,
+    fvnBreakdown: breakdown,
     totalScore,
     isDrink,
     isHfss,

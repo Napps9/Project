@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { calculatePoints, calculateAPoints, calculateCPoints, calculateFvnPoints } from '../nutrient-scorer';
 import { calculateNpmScore, calculateNpmScoreFromFvn } from '../npm-engine';
-import { classifyIngredient, calculateFvnFromIngredients, parseAndClassifyIngredients } from '../fvn-classifier';
-import { NutritionData } from '../../types';
+import { classifyIngredient, calculateFvnFromIngredients, calculateFvnFromState, parseAndClassifyIngredients } from '../fvn-classifier';
+import { NutritionData, FvnForm } from '../../types';
 
 // ── Generic point calculator ──
 
@@ -478,28 +478,36 @@ describe('seed and starchy veg exclusions', () => {
 
 // ── FVN % with form multiplier ──
 
-describe('calculateFvnFromIngredients with form multiplier', () => {
-  it('applies ×2 multiplier to dried fruit', () => {
+describe('calculateFvnFromIngredients with form multiplier (NPM 2011 ratio formula)', () => {
+  it('applies ×2 to dried fruit — all-FVN list gives 100%', () => {
+    // Only dried FVN: (0 + 2×10) / (0 + 2×10 + 0) = 100%
     const result = calculateFvnFromIngredients([
       { name: 'Dried Apricot', proportion: 10 },
     ]);
-    expect(result.fvnPercentage).toBe(20);
+    expect(result.fvnPercentage).toBe(100);
+    expect(result.breakdown.driedAndConcentrated).toBe(10);
+    expect(result.breakdown.other).toBe(0);
   });
 
-  it('applies ×2 multiplier to raisins (inherently dried)', () => {
+  it('applies ×2 to raisins with other ingredients', () => {
+    // (0 + 30) / (0 + 30 + 85) × 100 = 26.09%
     const result = calculateFvnFromIngredients([
       { name: 'Raisins', proportion: 15 },
       { name: 'Sugar', proportion: 85 },
     ]);
-    expect(result.fvnPercentage).toBe(30);
+    expect(result.fvnPercentage).toBeCloseTo(26.09, 1);
+    expect(result.breakdown.driedAndConcentrated).toBe(15);
+    expect(result.breakdown.other).toBe(85);
   });
 
-  it('applies ×2 multiplier to concentrated tomato puree', () => {
+  it('applies ×2 to concentrated tomato puree', () => {
+    // (0 + 40) / (0 + 40 + 80) × 100 = 33.33%
     const result = calculateFvnFromIngredients([
       { name: 'Tomato Puree', proportion: 20 },
       { name: 'Wheat Flour', proportion: 80 },
     ]);
-    expect(result.fvnPercentage).toBe(40);
+    expect(result.fvnPercentage).toBeCloseTo(33.33, 1);
+    expect(result.breakdown.driedAndConcentrated).toBe(20);
   });
 
   it('excludes fruit powders from FVN calculation', () => {
@@ -508,6 +516,7 @@ describe('calculateFvnFromIngredients with form multiplier', () => {
       { name: 'Sugar', proportion: 80 },
     ]);
     expect(result.fvnPercentage).toBe(0);
+    expect(result.breakdown.other).toBe(100);
   });
 
   it('excludes fruit leathers from FVN calculation', () => {
@@ -525,49 +534,231 @@ describe('calculateFvnFromIngredients with form multiplier', () => {
     expect(result.fvnPercentage).toBe(0);
   });
 
-  it('caps FVN at 100% even when doubled', () => {
+  it('ratio naturally stays ≤ 100% even with heavy dried FVN', () => {
+    // (0 + 120) / (0 + 120 + 40) × 100 = 75%
     const result = calculateFvnFromIngredients([
-      { name: 'Raisins', proportion: 60 }, // 60 × 2 = 120 → capped
+      { name: 'Raisins', proportion: 60 },
       { name: 'Sugar', proportion: 40 },
     ]);
-    expect(result.fvnPercentage).toBe(100);
+    expect(result.fvnPercentage).toBe(75);
+    expect(result.breakdown.driedAndConcentrated).toBe(60);
   });
 
   it('mixes fresh and dried correctly', () => {
+    // (50 + 30) / (50 + 30 + 35) × 100 = 69.57%
     const result = calculateFvnFromIngredients([
-      { name: 'Apple', proportion: 50 },     // fresh: 50
-      { name: 'Raisins', proportion: 15 },   // dried: 30
-      { name: 'Sugar', proportion: 35 },     // 0
+      { name: 'Apple', proportion: 50 },
+      { name: 'Raisins', proportion: 15 },
+      { name: 'Sugar', proportion: 35 },
     ]);
-    expect(result.fvnPercentage).toBe(80);
+    expect(result.fvnPercentage).toBeCloseTo(69.57, 1);
+    expect(result.breakdown.standardFvn).toBe(50);
+    expect(result.breakdown.driedAndConcentrated).toBe(15);
+    expect(result.breakdown.other).toBe(35);
   });
 });
 
 describe('full NPM engine with dried fruit', () => {
-  it('gives dried fruit the ×2 multiplier effect on score', () => {
+  it('gives dried fruit the ×2 multiplier via the ratio formula', () => {
     const nutrition: NutritionData = {
       energyKj: 1200, saturatedFatG: 2, totalSugarG: 30,
       sodiumMg: 100, fibreAoacG: 3, proteinG: 3,
     };
-    // 40% raisins alone should give 80% FVN → 2 FVN points
+    // 40% raisins: (0+80)/(0+80+60) = 57.14% → 1 FVN pt (>40 ≤60)
     const result = calculateNpmScore(nutrition, [
       { name: 'Raisins', proportion: 40 },
       { name: 'Sugar', proportion: 60 },
     ], false);
-    expect(result.fvnPercentage).toBe(80);
-    expect(result.cPoints.fruitVegNuts).toBe(2); // >60 but not >80
+    expect(result.fvnPercentage).toBeCloseTo(57.14, 1);
+    expect(result.cPoints.fruitVegNuts).toBe(1);
   });
 
-  it('50% raisins scores 5 FVN points (100% effective)', () => {
+  it('50% raisins with 50% sugar: ratio gives 66.67% → 2 FVN points', () => {
     const nutrition: NutritionData = {
       energyKj: 1200, saturatedFatG: 2, totalSugarG: 30,
       sodiumMg: 100, fibreAoacG: 3, proteinG: 3,
     };
+    // (0+100)/(0+100+50) = 66.67% → 2 FVN pts (>60 ≤80)
     const result = calculateNpmScore(nutrition, [
       { name: 'Raisins', proportion: 50 },
       { name: 'Sugar', proportion: 50 },
     ], false);
+    expect(result.fvnPercentage).toBeCloseTo(66.67, 1);
+    expect(result.cPoints.fruitVegNuts).toBe(2);
+  });
+});
+
+// ── NPM 2011 ratio formula — detailed tests ──
+
+describe('calculateFvnFromIngredients — NPM 2011 ratio formula', () => {
+  it('returns 0 for empty list', () => {
+    const result = calculateFvnFromIngredients([]);
+    expect(result.fvnPercentage).toBe(0);
+    expect(result.breakdown).toEqual({ standardFvn: 0, driedAndConcentrated: 0, other: 0 });
+  });
+
+  it('pure fresh fruit → 100%', () => {
+    const result = calculateFvnFromIngredients([{ name: 'Apple', proportion: 100 }]);
     expect(result.fvnPercentage).toBe(100);
-    expect(result.cPoints.fruitVegNuts).toBe(5);
+    expect(result.breakdown).toEqual({ standardFvn: 100, driedAndConcentrated: 0, other: 0 });
+  });
+
+  it('pure dried fruit → 100% (200/200)', () => {
+    const result = calculateFvnFromIngredients([{ name: 'Raisins', proportion: 100 }]);
+    expect(result.fvnPercentage).toBe(100);
+    expect(result.breakdown).toEqual({ standardFvn: 0, driedAndConcentrated: 100, other: 0 });
+  });
+
+  it('pure other → 0%', () => {
+    const result = calculateFvnFromIngredients([{ name: 'Sugar', proportion: 100 }]);
+    expect(result.fvnPercentage).toBe(0);
+    expect(result.breakdown).toEqual({ standardFvn: 0, driedAndConcentrated: 0, other: 100 });
+  });
+
+  it('fresh + dried (no other) → 100%', () => {
+    // (50 + 100) / (50 + 100 + 0) = 100%
+    const result = calculateFvnFromIngredients([
+      { name: 'Apple', proportion: 50 },
+      { name: 'Raisins', proportion: 50 },
+    ]);
+    expect(result.fvnPercentage).toBe(100);
+    expect(result.breakdown.standardFvn).toBe(50);
+    expect(result.breakdown.driedAndConcentrated).toBe(50);
+  });
+
+  it('dried + other → ratio formula', () => {
+    // (0 + 30) / (0 + 30 + 85) = 26.09%
+    const result = calculateFvnFromIngredients([
+      { name: 'Raisins', proportion: 15 },
+      { name: 'Sugar', proportion: 85 },
+    ]);
+    expect(result.fvnPercentage).toBeCloseTo(26.09, 1);
+  });
+
+  it('fresh + dried + other → correct ratio', () => {
+    // (40 + 20) / (40 + 20 + 50) = 54.55%
+    const result = calculateFvnFromIngredients([
+      { name: 'Apple', proportion: 40 },
+      { name: 'Raisins', proportion: 10 },
+      { name: 'Flour', proportion: 50 },
+    ]);
+    expect(result.fvnPercentage).toBeCloseTo(54.55, 1);
+    expect(result.breakdown.standardFvn).toBe(40);
+    expect(result.breakdown.driedAndConcentrated).toBe(10);
+    expect(result.breakdown.other).toBe(50);
+  });
+
+  it('partial list (sums < 100) — ratio still applies', () => {
+    // Only Apple 30%: (30+0)/(30+0+0) = 100%
+    const result = calculateFvnFromIngredients([{ name: 'Apple', proportion: 30 }]);
+    expect(result.fvnPercentage).toBe(100);
+  });
+
+  it('unrecognised ingredient goes to other', () => {
+    // (70 + 0) / (70 + 0 + 30) = 70%
+    const result = calculateFvnFromIngredients([
+      { name: 'Mystery Stuff', proportion: 30 },
+      { name: 'Apple', proportion: 70 },
+    ]);
+    expect(result.fvnPercentage).toBe(70);
+    expect(result.breakdown.other).toBe(30);
+  });
+
+  it('concentrated tomato purée goes in dried bucket', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Concentrated Tomato Puree', proportion: 10 },
+      { name: 'Flour', proportion: 90 },
+    ]);
+    expect(result.breakdown.driedAndConcentrated).toBe(10);
+    // (0 + 20) / (0 + 20 + 90) = 18.18%
+    expect(result.fvnPercentage).toBeCloseTo(18.18, 1);
+  });
+
+  it('nuts are standard FVN', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Almonds', proportion: 40 },
+      { name: 'Sugar', proportion: 60 },
+    ]);
+    expect(result.breakdown.standardFvn).toBe(40);
+    expect(result.fvnPercentage).toBe(40);
+  });
+
+  it('legumes are standard FVN', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Chickpeas', proportion: 50 },
+      { name: 'Oil', proportion: 50 },
+    ]);
+    expect(result.breakdown.standardFvn).toBe(50);
+    expect(result.fvnPercentage).toBe(50);
+  });
+
+  it('breakdown sums equal input proportion total', () => {
+    const result = calculateFvnFromIngredients([
+      { name: 'Apple', proportion: 30 },
+      { name: 'Raisins', proportion: 20 },
+      { name: 'Sugar', proportion: 50 },
+    ]);
+    const { standardFvn, driedAndConcentrated, other } = result.breakdown;
+    expect(standardFvn + driedAndConcentrated + other).toBe(100);
+  });
+});
+
+// ── calculateFvnFromState — respects user overrides ──
+
+describe('calculateFvnFromState', () => {
+  const make = (overrides: Partial<{ proportion: number; isFvn: boolean; form: FvnForm; userVote: 'up' | 'down' | null }>) => ({
+    proportion: 0,
+    isFvn: false,
+    form: 'none' as FvnForm,
+    userVote: null as 'up' | 'down' | null,
+    ...overrides,
+  });
+
+  it('user vote up forces ingredient into FVN (standard bucket)', () => {
+    const result = calculateFvnFromState([
+      make({ proportion: 30, isFvn: false, form: 'fresh', userVote: 'up' }),
+      make({ proportion: 70, isFvn: false, form: 'none', userVote: null }),
+    ]);
+    expect(result.breakdown.standardFvn).toBe(30);
+    expect(result.breakdown.other).toBe(70);
+    expect(result.fvnPercentage).toBe(30);
+  });
+
+  it('user vote up with dried form routes to dried bucket', () => {
+    const result = calculateFvnFromState([
+      make({ proportion: 20, isFvn: false, form: 'dried', userVote: 'up' }),
+      make({ proportion: 80, isFvn: false, form: 'none', userVote: null }),
+    ]);
+    expect(result.breakdown.driedAndConcentrated).toBe(20);
+    // (0 + 40) / (0 + 40 + 80) = 33.33%
+    expect(result.fvnPercentage).toBeCloseTo(33.33, 1);
+  });
+
+  it('user vote down forces FVN ingredient into other bucket', () => {
+    const result = calculateFvnFromState([
+      make({ proportion: 50, isFvn: true, form: 'fresh', userVote: 'down' }),
+      make({ proportion: 50, isFvn: false, form: 'none', userVote: null }),
+    ]);
+    expect(result.breakdown.standardFvn).toBe(0);
+    expect(result.breakdown.other).toBe(100);
+    expect(result.fvnPercentage).toBe(0);
+  });
+
+  it('excluded form goes to other even if isFvn', () => {
+    const result = calculateFvnFromState([
+      make({ proportion: 20, isFvn: true, form: 'excluded', userVote: null }),
+      make({ proportion: 80, isFvn: false, form: 'none', userVote: null }),
+    ]);
+    expect(result.breakdown.other).toBe(100);
+    expect(result.fvnPercentage).toBe(0);
+  });
+
+  it('nut form routes to standard bucket', () => {
+    const result = calculateFvnFromState([
+      make({ proportion: 40, isFvn: true, form: 'nut', userVote: null }),
+      make({ proportion: 60, isFvn: false, form: 'none', userVote: null }),
+    ]);
+    expect(result.breakdown.standardFvn).toBe(40);
+    expect(result.fvnPercentage).toBe(40);
   });
 });

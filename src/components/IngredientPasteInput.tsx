@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FvnForm, ParsedIngredientState } from '@/lib/types';
 import { loadFvnOverrides } from '@/lib/storage';
+import { calculateFvnFromState } from '@/lib/rules/fvn-classifier';
 
 export type { ParsedIngredientState };
 
@@ -134,6 +135,8 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
 
   const totalProportion = ingredients.reduce((sum, ing) => sum + ing.proportion, 0);
   const unknownCount = ingredients.filter((i) => i.recognition === 'unrecognized' && i.name.trim()).length;
+  const validIngredients = ingredients.filter((i) => i.name.trim());
+  const { fvnPercentage: liveFvnPct, breakdown: liveBreakdown } = calculateFvnFromState(validIngredients);
 
   if (phase === 'input') {
     return (
@@ -158,20 +161,33 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className={`text-xs ${Math.abs(totalProportion - 100) < 0.1 ? 'text-green-600' : 'text-amber-600'}`}>
-            Total: {totalProportion.toFixed(1)}%
-          </span>
-          {unknownCount > 0 && (
-            <span className="text-xs text-amber-600 font-medium">
-              {unknownCount} unknown ingredient{unknownCount > 1 ? 's' : ''} — please verify
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className={`text-xs ${Math.abs(totalProportion - 100) < 0.1 ? 'text-green-600' : 'text-amber-600'}`}>
+              Total: {totalProportion.toFixed(1)}%
             </span>
-          )}
+            {unknownCount > 0 && (
+              <span className="text-xs text-amber-600 font-medium">
+                {unknownCount} unknown ingredient{unknownCount > 1 ? 's' : ''} — please verify
+              </span>
+            )}
+          </div>
+          <button onClick={handleReEnter} className="text-xs text-blue-600 hover:text-blue-800">
+            Re-enter ingredients
+          </button>
         </div>
-        <button onClick={handleReEnter} className="text-xs text-blue-600 hover:text-blue-800">
-          Re-enter ingredients
-        </button>
+        {validIngredients.length > 0 && (
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span>Standard FVN: {liveBreakdown.standardFvn.toFixed(1)}%</span>
+            <span>&middot;</span>
+            <span>Dried (&times;2): {liveBreakdown.driedAndConcentrated.toFixed(1)}%</span>
+            <span>&middot;</span>
+            <span>Other: {liveBreakdown.other.toFixed(1)}%</span>
+            <span>&middot;</span>
+            <span className="font-medium text-gray-700">Effective FVN: {liveFvnPct.toFixed(1)}%</span>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1.5">

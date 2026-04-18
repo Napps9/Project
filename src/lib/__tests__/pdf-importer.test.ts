@@ -6,6 +6,7 @@ import {
   extractPdfNutrition,
   extractCatalogIngredients,
 } from '../pdf-importer';
+import { parseAndClassifyIngredients, calculateFvnFromIngredients } from '../rules/fvn-classifier';
 
 describe('splitRecipeBlocks', () => {
   it('splits on explicit Recipe: markers', () => {
@@ -519,5 +520,17 @@ describe('parsePdfText — flattened supplier output (real Courgette cake)', () 
     expect(text).toMatch(/Eggs[^,]*?12\.55\s*%/i);
     // Vegetable Oil: 170/924 ≈ 18.40% (verifies MILLILITRE handling)
     expect(text).toMatch(/Oil[^,]*?18\.40\s*%/i);
+  });
+
+  it('produces correct FVN breakdown when classified (no dried → standardFvn only)', () => {
+    const result = parsePdfText(flatCourgetteCake);
+    const parsed = parseAndClassifyIngredients(result.rows[0].ingredientText);
+    const ingredients = parsed.map((p) => ({ name: p.name, proportion: p.proportion }));
+    const { fvnPercentage, breakdown } = calculateFvnFromIngredients(ingredients);
+    // Courgette is the only FVN ingredient: 240/924 ≈ 25.97%
+    expect(fvnPercentage).toBeCloseTo(25.97, 1);
+    expect(breakdown.standardFvn).toBeCloseTo(25.97, 1);
+    expect(breakdown.driedAndConcentrated).toBe(0);
+    expect(breakdown.other).toBeCloseTo(74.03, 1);
   });
 });

@@ -212,46 +212,46 @@ export default function RecipesPage() {
     : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div className="flex items-center gap-3 flex-1">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search recipes..."
-            className="flex-1 max-w-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder:text-gray-400 dark:placeholder:text-gray-500"
             aria-label="Search recipes"
           />
-          <div className="flex items-center gap-0.5 border border-gray-200 dark:border-gray-700 rounded-lg p-0.5 bg-gray-50 dark:bg-gray-800">
+          <div className="flex items-center gap-0.5 border border-gray-200 dark:border-gray-700 rounded-lg p-0.5 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
             {(['all', 'healthier', 'hfss'] as FilterMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setFilter(mode)}
-                className={`px-3 py-1.5 text-xs rounded-md transition-colors font-medium ${
+                className={`px-2 sm:px-3 py-1.5 text-xs rounded-md transition-colors font-medium ${
                   filter === mode
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
                 }`}
               >
-                {mode === 'all' ? 'All' : mode === 'hfss' ? 'HFSS' : 'Healthier'}
+                {mode === 'all' ? 'All' : mode === 'hfss' ? 'HFSS' : 'Healthy'}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:justify-end">
           <button
             onClick={handleDownloadTemplate}
-            className="px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            className="px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-center"
           >
             Download Template
           </button>
           <button
             onClick={handleImportClick}
             disabled={importing}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-sm"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-sm"
           >
             {importing && (
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -276,7 +276,7 @@ export default function RecipesPage() {
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 shadow-sm">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-gray-700 dark:text-gray-300">
-              Processing recipes... {importProgress.done} of {importProgress.total}
+              Processing... {importProgress.done}/{importProgress.total}
             </span>
             <span className="text-gray-500 dark:text-gray-400">{progressPct}%</span>
           </div>
@@ -292,19 +292,18 @@ export default function RecipesPage() {
       {/* Import summary */}
       {importSummary && !importing && (
         <div
-          className={`border rounded-lg p-4 text-sm ${
+          className={`border rounded-lg p-3 sm:p-4 text-sm ${
             importSummary.total > 0
               ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
               : 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300'
           }`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-start sm:items-center justify-between gap-2">
             <div>
               <strong>Import complete.</strong>{' '}
               {importSummary.total > 0 ? (
                 <>
-                  Imported {importSummary.total} recipe
-                  {importSummary.total !== 1 ? 's' : ''} —{' '}
+                  {importSummary.total} recipe{importSummary.total !== 1 ? 's' : ''} —{' '}
                   <span className="text-red-700 dark:text-red-400">{importSummary.hfss} HFSS</span>,{' '}
                   <span className="text-green-700 dark:text-green-400">{importSummary.healthier} healthier</span>
                   {importSummary.errors > 0 && (
@@ -320,7 +319,7 @@ export default function RecipesPage() {
             </div>
             <button
               onClick={() => setImportSummary(null)}
-              className="text-xs opacity-60 hover:opacity-100 transition-opacity"
+              className="text-xs opacity-60 hover:opacity-100 transition-opacity flex-shrink-0"
               aria-label="Dismiss import summary"
             >
               Dismiss
@@ -344,9 +343,9 @@ export default function RecipesPage() {
         </div>
       )}
 
-      {/* Table / empty state */}
+      {/* Mobile card view + Desktop table */}
       {products.length === 0 ? (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-12 text-center shadow-sm">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-8 sm:p-12 text-center shadow-sm">
           <p className="text-lg font-medium text-gray-700 dark:text-gray-300">No recipes yet</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Import a CSV file to add recipes in bulk, or{' '}
@@ -361,78 +360,120 @@ export default function RecipesPage() {
           No recipes match your filters.
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <tr>
-                  <th
-                    onClick={() => toggleSort('name')}
-                    className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-                  >
-                    Name {sortField === 'name' && (sortDir === 'asc' ? '▲' : '▼')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400">HFSS</th>
-                  <th
-                    onClick={() => toggleSort('score')}
-                    className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-                  >
-                    Score {sortField === 'score' && (sortDir === 'asc' ? '▲' : '▼')}
-                  </th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">A pts</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">C pts</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400">FVN%</th>
-                  <th
-                    onClick={() => toggleSort('savedAt')}
-                    className="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-                  >
-                    Saved {sortField === 'savedAt' && (sortDir === 'asc' ? '▲' : '▼')}
-                  </th>
-                  <th className="w-16"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((p) => (
-                  <tr
-                    key={p.id}
-                    onClick={() => handleRowClick(p.id)}
-                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
-                  >
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{p.name}</td>
-                    <td className="px-4 py-3">
+        <>
+          {/* Mobile cards */}
+          <div className="space-y-2 sm:hidden">
+            {visible.map((p) => (
+              <div
+                key={p.id}
+                onClick={() => handleRowClick(p.id)}
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors shadow-sm active:bg-gray-50 dark:active:bg-gray-800"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{p.name}</div>
+                    <div className="flex items-center gap-2 mt-1.5">
                       <ScoreBadge isHfss={p.result.isHfss} score={p.result.totalScore} />
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">{p.result.totalScore}</td>
-                    <td className="px-4 py-3 text-right font-mono text-red-700 dark:text-red-400">
-                      {p.result.aPoints.total}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-green-700 dark:text-green-400">
-                      {p.result.cPoints.total}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400">
-                      {p.result.fvnPercentage.toFixed(0)}%
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-400 dark:text-gray-500">
-                      {new Date(p.savedAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={(e) => handleDelete(p.id, e)}
-                        className="text-xs text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 transition-colors"
-                        aria-label={`Delete ${p.name}`}
-                      >
-                        Delete
-                      </button>
-                    </td>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => handleDelete(p.id, e)}
+                    className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-2 -mr-1 transition-colors"
+                    aria-label={`Delete ${p.name}`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  <span>Score: <span className="font-mono">{p.result.totalScore}</span></span>
+                  <span>A: <span className="font-mono text-red-600 dark:text-red-400">{p.result.aPoints.total}</span></span>
+                  <span>C: <span className="font-mono text-green-600 dark:text-green-400">{p.result.cPoints.total}</span></span>
+                  <span>FVN: <span className="font-mono">{p.result.fvnPercentage.toFixed(0)}%</span></span>
+                </div>
+              </div>
+            ))}
+            <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
+              Showing {visible.length} of {products.length} recipe{products.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <tr>
+                    <th
+                      onClick={() => toggleSort('name')}
+                      className="text-left px-3 md:px-4 py-3 font-medium text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                    >
+                      Name {sortField === 'name' && (sortDir === 'asc' ? '▲' : '▼')}
+                    </th>
+                    <th className="text-left px-3 md:px-4 py-3 font-medium text-gray-600 dark:text-gray-400">HFSS</th>
+                    <th
+                      onClick={() => toggleSort('score')}
+                      className="text-right px-3 md:px-4 py-3 font-medium text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                    >
+                      Score {sortField === 'score' && (sortDir === 'asc' ? '▲' : '▼')}
+                    </th>
+                    <th className="text-right px-3 md:px-4 py-3 font-medium text-gray-600 dark:text-gray-400 hidden lg:table-cell">A pts</th>
+                    <th className="text-right px-3 md:px-4 py-3 font-medium text-gray-600 dark:text-gray-400 hidden lg:table-cell">C pts</th>
+                    <th className="text-right px-3 md:px-4 py-3 font-medium text-gray-600 dark:text-gray-400 hidden md:table-cell">FVN%</th>
+                    <th
+                      onClick={() => toggleSort('savedAt')}
+                      className="text-left px-3 md:px-4 py-3 font-medium text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 transition-colors hidden md:table-cell"
+                    >
+                      Saved {sortField === 'savedAt' && (sortDir === 'asc' ? '▲' : '▼')}
+                    </th>
+                    <th className="w-16"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {visible.map((p) => (
+                    <tr
+                      key={p.id}
+                      onClick={() => handleRowClick(p.id)}
+                      className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-3 md:px-4 py-3 font-medium text-gray-900 dark:text-gray-100 max-w-[200px] truncate">{p.name}</td>
+                      <td className="px-3 md:px-4 py-3">
+                        <ScoreBadge isHfss={p.result.isHfss} score={p.result.totalScore} />
+                      </td>
+                      <td className="px-3 md:px-4 py-3 text-right font-mono">{p.result.totalScore}</td>
+                      <td className="px-3 md:px-4 py-3 text-right font-mono text-red-700 dark:text-red-400 hidden lg:table-cell">
+                        {p.result.aPoints.total}
+                      </td>
+                      <td className="px-3 md:px-4 py-3 text-right font-mono text-green-700 dark:text-green-400 hidden lg:table-cell">
+                        {p.result.cPoints.total}
+                      </td>
+                      <td className="px-3 md:px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-400 hidden md:table-cell">
+                        {p.result.fvnPercentage.toFixed(0)}%
+                      </td>
+                      <td className="px-3 md:px-4 py-3 text-xs text-gray-400 dark:text-gray-500 hidden md:table-cell">
+                        {new Date(p.savedAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-3 md:px-4 py-3">
+                        <button
+                          onClick={(e) => handleDelete(p.id, e)}
+                          className="text-xs text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 transition-colors p-1"
+                          aria-label={`Delete ${p.name}`}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-3 md:px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+              Showing {visible.length} of {products.length} recipe{products.length !== 1 ? 's' : ''}
+            </div>
           </div>
-          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-            Showing {visible.length} of {products.length} recipe{products.length !== 1 ? 's' : ''}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -82,7 +82,7 @@ function Row({ label, value, max, note }: { label: string; value: number; max: n
   const pct = (value / max) * 100;
   return (
     <div className="flex items-center gap-2">
-      <span className="w-28 text-gray-600 dark:text-gray-400">{label}</span>
+      <span className="w-20 sm:w-28 text-gray-600 dark:text-gray-400 text-xs sm:text-sm">{label}</span>
       <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2">
         <div className="h-2 rounded-full bg-current" style={{ width: `${pct}%` }} />
       </div>

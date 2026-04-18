@@ -38,19 +38,19 @@ export default function SaveProductDialog({ isDrink, nutrition, ingredients, res
   }
 
   return (
-    <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 sm:px-4 py-3">
       <input
         type="text"
         placeholder="Product name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-sm bg-white dark:bg-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 sm:py-1.5 text-sm bg-white dark:bg-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
       />
       <button
         onClick={handleSave}
         disabled={!name.trim()}
-        className="px-4 py-1.5 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 rounded-md hover:bg-gray-900 dark:hover:bg-white disabled:opacity-50 text-sm font-medium whitespace-nowrap transition-colors"
+        className="px-4 py-2 sm:py-1.5 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 rounded-md hover:bg-gray-900 dark:hover:bg-white disabled:opacity-50 text-sm font-medium whitespace-nowrap transition-colors"
       >
         Save Product
       </button>

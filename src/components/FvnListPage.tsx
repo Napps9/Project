@@ -61,23 +61,23 @@ export default function FvnListPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                   <tr>
-                    <th className="text-left px-4 py-2 font-medium text-gray-600 dark:text-gray-400">Name</th>
-                    <th className="text-left px-4 py-2 font-medium text-gray-600 dark:text-gray-400">Category</th>
-                    <th className="text-left px-4 py-2 font-medium text-gray-600 dark:text-gray-400">Form</th>
-                    <th className="text-left px-4 py-2 font-medium text-gray-600 dark:text-gray-400">Updated</th>
-                    <th className="w-16"></th>
+                    <th className="text-left px-3 sm:px-4 py-2 font-medium text-gray-600 dark:text-gray-400">Name</th>
+                    <th className="text-left px-3 sm:px-4 py-2 font-medium text-gray-600 dark:text-gray-400">Category</th>
+                    <th className="text-left px-3 sm:px-4 py-2 font-medium text-gray-600 dark:text-gray-400 hidden sm:table-cell">Form</th>
+                    <th className="text-left px-3 sm:px-4 py-2 font-medium text-gray-600 dark:text-gray-400 hidden md:table-cell">Updated</th>
+                    <th className="w-12 sm:w-16"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {fvnItems.map((item) => (
                     <tr key={item.name} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{item.name}</td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 sm:px-4 py-2 text-gray-900 dark:text-gray-100">{item.name}</td>
+                      <td className="px-3 sm:px-4 py-2">
                         <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                           {item.category}
                         </span>
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 sm:px-4 py-2 hidden sm:table-cell">
                         <span
                           className={`text-xs px-1.5 py-0.5 rounded ${
                             item.form === 'dried'
@@ -88,13 +88,13 @@ export default function FvnListPage() {
                           {item.form === 'dried' ? 'dried \u00D72' : item.form}
                         </span>
                       </td>
-                      <td className="px-4 py-2 text-gray-400 dark:text-gray-500 text-xs">
+                      <td className="px-3 sm:px-4 py-2 text-gray-400 dark:text-gray-500 text-xs hidden md:table-cell">
                         {new Date(item.updatedAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 sm:px-4 py-2">
                         <button
                           onClick={() => handleDelete(item.name)}
-                          className="text-xs text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 transition-colors"
+                          className="text-xs text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 transition-colors p-1"
                           aria-label={`Delete ${item.name}`}
                         >
                           Delete
@@ -119,22 +119,22 @@ export default function FvnListPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                   <tr>
-                    <th className="text-left px-4 py-2 font-medium text-gray-600 dark:text-gray-400">Name</th>
-                    <th className="text-left px-4 py-2 font-medium text-gray-600 dark:text-gray-400">Updated</th>
-                    <th className="w-16"></th>
+                    <th className="text-left px-3 sm:px-4 py-2 font-medium text-gray-600 dark:text-gray-400">Name</th>
+                    <th className="text-left px-3 sm:px-4 py-2 font-medium text-gray-600 dark:text-gray-400 hidden sm:table-cell">Updated</th>
+                    <th className="w-12 sm:w-16"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {nonFvnItems.map((item) => (
                     <tr key={item.name} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{item.name}</td>
-                      <td className="px-4 py-2 text-gray-400 dark:text-gray-500 text-xs">
+                      <td className="px-3 sm:px-4 py-2 text-gray-900 dark:text-gray-100">{item.name}</td>
+                      <td className="px-3 sm:px-4 py-2 text-gray-400 dark:text-gray-500 text-xs hidden sm:table-cell">
                         {new Date(item.updatedAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-3 sm:px-4 py-2">
                         <button
                           onClick={() => handleDelete(item.name)}
-                          className="text-xs text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 transition-colors"
+                          className="text-xs text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 transition-colors p-1"
                           aria-label={`Delete ${item.name}`}
                         >
                           Delete

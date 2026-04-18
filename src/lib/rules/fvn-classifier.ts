@@ -291,7 +291,7 @@ function bucketForForm(isFvn: boolean, form: FvnForm): 'standard' | 'dried' | nu
  * The ratio is mathematically ≤ 100; `Math.min(100, …)` is a float-safety floor.
  * Returns 0 when the denominator is 0 (empty list or all zero-proportion input).
  */
-function effectiveFvnPercentage(breakdown: FvnBreakdown): number {
+export function effectiveFvnPercentage(breakdown: FvnBreakdown): number {
   const { standardFvn: S, driedAndConcentrated: D, other: O } = breakdown;
   const denom = S + 2 * D + O;
   if (denom <= 0) return 0;
@@ -336,12 +336,19 @@ export function calculateFvnFromIngredients(
 }
 
 /**
+ * Is this ingredient effectively treated as FVN after accounting for
+ * user overrides and excluded forms?
+ */
+export function isEffectivelyFvn(ing: { isFvn: boolean; form: FvnForm; userVote?: 'up' | 'down' | null }): boolean {
+  if (ing.userVote === 'up') return true;
+  if (ing.userVote === 'down') return false;
+  return ing.isFvn && ing.form !== 'excluded';
+}
+
+/**
  * Compute FVN% and breakdown from pre-classified ingredient state (from the UI),
  * honouring user overrides (`userVote: 'up' | 'down'`) and the current `form`
  * selection. No re-classification — the UI has already classified.
- *
- * Used by the live summary in `IngredientPasteInput` and by the score
- * submission path in `ProductForm` and `RecipesPage`.
  */
 export function calculateFvnFromState(
   ingredients: Array<{
@@ -356,13 +363,9 @@ export function calculateFvnFromState(
   let other = 0;
 
   for (const ing of ingredients) {
-    const effectivelyFvn =
-      (ing.isFvn && ing.form !== 'excluded' && ing.userVote !== 'down') ||
-      ing.userVote === 'up';
-
-    if (effectivelyFvn && ing.form === 'dried') {
+    if (isEffectivelyFvn(ing) && ing.form === 'dried') {
       driedAndConcentrated += ing.proportion;
-    } else if (effectivelyFvn) {
+    } else if (isEffectivelyFvn(ing)) {
       standardFvn += ing.proportion;
     } else {
       other += ing.proportion;

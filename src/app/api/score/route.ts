@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { NutritionData, IngredientInput, FvnBreakdown } from '@/lib/types';
 import { calculateNpmScore, calculateNpmScoreFromFvn } from '@/lib/rules/npm-engine';
+import { effectiveFvnPercentage } from '@/lib/rules/fvn-classifier';
 
 export async function POST(request: Request) {
   const { isDrink, nutrition, ingredients, fvnPercentage, fvnBreakdown } =
@@ -16,10 +17,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing nutrition data' }, { status: 400 });
   }
 
-  // If fvnPercentage is provided directly (from client-side calculation with
-  // user overrides), use it. Pass through the optional breakdown for display.
   if (typeof fvnPercentage === 'number') {
-    const score = calculateNpmScoreFromFvn(nutrition, fvnPercentage, isDrink ?? false, fvnBreakdown);
+    const verifiedPct = fvnBreakdown ? effectiveFvnPercentage(fvnBreakdown) : fvnPercentage;
+    const score = calculateNpmScoreFromFvn(nutrition, verifiedPct, isDrink ?? false, fvnBreakdown);
     return NextResponse.json(score);
   }
 

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { FvnForm, ParsedIngredientState } from '@/lib/types';
 import { loadFvnOverrides } from '@/lib/storage';
-import { calculateFvnFromState } from '@/lib/rules/fvn-classifier';
+import { calculateFvnFromState, isEffectivelyFvn } from '@/lib/rules/fvn-classifier';
 
 export type { ParsedIngredientState };
 
@@ -86,7 +86,7 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
   /** Promote ingredient to FVN (thumbs up) */
   const handleThumbsUp = (index: number) => {
     const ing = ingredients[index];
-    if (isEffectiveFvn(ing)) return; // already FVN, no-op
+    if (isEffectivelyFvn(ing)) return; // already FVN, no-op
     const updates: Partial<ParsedIngredientState> = {
       userVote: 'up' as const,
       isFvn: true,
@@ -102,7 +102,7 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
 
   /** Reject ingredient from FVN (thumbs down) */
   const handleThumbsDown = (index: number) => {
-    if (!isEffectiveFvn(ingredients[index])) return; // already non-FVN, no-op
+    if (!isEffectivelyFvn(ingredients[index])) return; // already non-FVN, no-op
     updateIngredient(index, { userVote: 'down' as const });
   };
 
@@ -126,17 +126,20 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
     });
   };
 
-  /** Is this ingredient effectively treated as FVN (auto + user intent)? */
-  const isEffectiveFvn = (ing: ParsedIngredientState) => {
-    if (ing.isFvn && ing.form !== 'excluded' && ing.userVote !== 'down') return true;
-    if (ing.userVote === 'up') return true;
-    return false;
-  };
-
-  const totalProportion = ingredients.reduce((sum, ing) => sum + ing.proportion, 0);
-  const unknownCount = ingredients.filter((i) => i.recognition === 'unrecognized' && i.name.trim()).length;
-  const validIngredients = ingredients.filter((i) => i.name.trim());
-  const { fvnPercentage: liveFvnPct, breakdown: liveBreakdown } = calculateFvnFromState(validIngredients);
+  const { totalProportion, unknownCount, liveFvnPct, liveBreakdown, hasValid } = useMemo(() => {
+    let total = 0;
+    let unknown = 0;
+    const valid: ParsedIngredientState[] = [];
+    for (const ing of ingredients) {
+      total += ing.proportion;
+      if (ing.name.trim()) {
+        valid.push(ing);
+        if (ing.recognition === 'unrecognized') unknown++;
+      }
+    }
+    const { fvnPercentage, breakdown } = calculateFvnFromState(valid);
+    return { totalProportion: total, unknownCount: unknown, liveFvnPct: fvnPercentage, liveBreakdown: breakdown, hasValid: valid.length > 0 };
+  }, [ingredients]);
 
   if (phase === 'input') {
     return (
@@ -177,7 +180,7 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
             Re-enter ingredients
           </button>
         </div>
-        {validIngredients.length > 0 && (
+        {hasValid && (
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <span>Standard FVN: {liveBreakdown.standardFvn.toFixed(1)}%</span>
             <span>&middot;</span>
@@ -192,7 +195,7 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
 
       <div className="space-y-1.5">
         {ingredients.map((ing, i) => {
-          const effectiveFvn = isEffectiveFvn(ing);
+          const effectiveFvn = isEffectivelyFvn(ing);
           return (
             <div key={i} className="flex items-center gap-2">
               <span className="text-xs text-gray-400 w-5">{i + 1}.</span>

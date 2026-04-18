@@ -38,18 +38,9 @@ export default function ScoreResult({ result }: Props) {
             <Row label={`FVN (${fvnPercentage.toFixed(0)}%)`} value={cPoints.fruitVegNuts} max={5} />
             {result.fvnBreakdown && (
               <div className="ml-4 space-y-0.5 text-xs text-gray-500">
-                <div className="flex justify-between">
-                  <span>Standard FVN (fresh / nuts / pulses)</span>
-                  <span className="font-mono">{result.fvnBreakdown.standardFvn.toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between" title="Per UK NPM 2011, dried fruit/veg and concentrated tomato purée count double toward FVN%">
-                  <span>Dried + conc. tomato (&times;2)</span>
-                  <span className="font-mono">{result.fvnBreakdown.driedAndConcentrated.toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Other ingredients</span>
-                  <span className="font-mono">{result.fvnBreakdown.other.toFixed(1)}%</span>
-                </div>
+                <BreakdownRow label="Standard FVN (fresh / nuts / pulses)" percent={result.fvnBreakdown.standardFvn} />
+                <BreakdownRow label="Dried + conc. tomato (&times;2)" percent={result.fvnBreakdown.driedAndConcentrated} title="Per UK NPM 2011, dried fruit/veg and concentrated tomato purée count double toward FVN%" />
+                <BreakdownRow label="Other ingredients" percent={result.fvnBreakdown.other} />
               </div>
             )}
             <Row label="Fibre" value={cPoints.fibre} max={5} />
@@ -74,6 +65,15 @@ export default function ScoreResult({ result }: Props) {
           <span className="ml-3 text-xs text-gray-500">(food threshold: score &ge; 4)</span>
         )}
       </div>
+    </div>
+  );
+}
+
+function BreakdownRow({ label, percent, title }: { label: string; percent: number; title?: string }) {
+  return (
+    <div className="flex justify-between" title={title}>
+      <span>{label}</span>
+      <span className="font-mono">{percent.toFixed(1)}%</span>
     </div>
   );
 }

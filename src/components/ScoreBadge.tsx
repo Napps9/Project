@@ -8,8 +8,8 @@ export default function ScoreBadge({ isHfss, score }: ScoreBadgeProps) {
     <span
       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold ${
         isHfss
-          ? 'bg-red-100 text-red-800 border border-red-200'
-          : 'bg-green-100 text-green-800 border border-green-200'
+          ? 'bg-red-100 text-red-800 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
+          : 'bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
       }`}
     >
       <span className={`w-2 h-2 rounded-full ${isHfss ? 'bg-red-500' : 'bg-green-500'}`} />

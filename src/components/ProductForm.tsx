@@ -32,7 +32,6 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
   const [loading, setLoading] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
-  // Nutrition paste state
   const [nutritionText, setNutritionText] = useState('');
   const [parseInfo, setParseInfo] = useState<{ found: string[]; notFound: string[] } | null>(null);
 
@@ -99,57 +98,56 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
           <input
             type="checkbox"
             checked={isDrink}
             onChange={(e) => setIsDrink(e.target.checked)}
-            className="rounded"
+            className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
           />
           This is a drink
         </label>
         <button
           onClick={handleReset}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
         >
           New Product
         </button>
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-3">Nutrition per 100g</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Nutrition per 100g</h3>
 
-        {/* Nutrition paste input */}
         <div className="mb-4">
           <textarea
             value={nutritionText}
             onChange={(e) => setNutritionText(e.target.value)}
             placeholder="Paste nutrition information here (e.g. Energy: 1500kJ, Sat Fat: 4g, Sugars: 15g, Salt: 1.2g, Fibre: 3g, Protein: 5g)"
             rows={3}
-            className="w-full border rounded px-3 py-2 text-sm resize-y mb-2"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 resize-y mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
           <div className="flex items-center gap-3">
             <button
               onClick={handleParseNutrition}
               disabled={!nutritionText.trim()}
-              className="px-3 py-1.5 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:opacity-50 text-xs font-medium"
+              className="px-3 py-1.5 bg-gray-700 dark:bg-gray-600 text-white rounded-md hover:bg-gray-800 dark:hover:bg-gray-500 disabled:opacity-50 text-xs font-medium transition-colors"
             >
               Parse Nutrition
             </button>
             {parseInfo && (
               <div className="text-xs">
                 {parseInfo.found.length > 0 && (
-                  <span className="text-green-600">Found: {parseInfo.found.join(', ')}</span>
+                  <span className="text-green-600 dark:text-green-400">Found: {parseInfo.found.join(', ')}</span>
                 )}
                 {parseInfo.notFound.length > 0 && (
-                  <span className="text-amber-600 ml-2">Not found: {parseInfo.notFound.join(', ')}</span>
+                  <span className="text-amber-600 dark:text-amber-400 ml-2">Not found: {parseInfo.notFound.join(', ')}</span>
                 )}
               </div>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <NutrientField label="Energy (kJ)" value={nutrition.energyKj} field="energyKj" onChange={updateNutrition} />
           <NutrientField label="Saturated Fat (g)" value={nutrition.saturatedFatG} field="saturatedFatG" onChange={updateNutrition} />
           <NutrientField label="Total Sugar (g)" value={nutrition.totalSugarG} field="totalSugarG" onChange={updateNutrition} />
@@ -160,9 +158,9 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-3">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           Ingredients
-          <span className="font-normal text-gray-400 ml-1">(paste comma-separated list for automatic FVN classification)</span>
+          <span className="font-normal text-gray-400 dark:text-gray-500 ml-1">(paste comma-separated list for automatic FVN classification)</span>
         </h3>
         <IngredientPasteInput
           key={resetKey}
@@ -171,13 +169,29 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          {error}
+        </div>
+      )}
+
       <div className="flex gap-3">
         <button
           onClick={handleScore}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-sm"
         >
+          {loading && (
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          )}
           {loading ? 'Calculating...' : 'Calculate Score'}
         </button>
       </div>
@@ -212,12 +226,12 @@ function NutrientField({
 }) {
   return (
     <div>
-      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</label>
       <input
         type="number"
         value={value || ''}
         onChange={(e) => onChange(field, e.target.value)}
-        className="w-full border rounded px-2 py-1.5 text-sm"
+        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
         min={0}
         step={0.1}
       />

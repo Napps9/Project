@@ -26,7 +26,6 @@ export default function RecipeDetailPage() {
   }, [id]);
 
   const handleSaved = () => {
-    // After save, jump back to the directory so the user can see the full list
     router.push('/recipes');
   };
 
@@ -36,24 +35,30 @@ export default function RecipeDetailPage() {
 
   if (!loaded) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-sm text-gray-500">
-        Loading recipe...
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
+        <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Loading recipe...
+        </div>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-        <p className="text-lg font-medium text-gray-700">Recipe not found</p>
-        <p className="text-sm text-gray-500 mt-2">
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
+        <p className="text-lg font-medium text-gray-700 dark:text-gray-300">Recipe not found</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
           This recipe may have been deleted, or the link is incorrect.
         </p>
         <Link
           href="/recipes"
-          className="inline-block mt-4 text-sm text-blue-600 hover:text-blue-800"
+          className="inline-block mt-4 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
         >
-          ← Back to Recipes
+          &larr; Back to Recipes
         </Link>
       </div>
     );
@@ -62,12 +67,12 @@ export default function RecipeDetailPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Link href="/recipes" className="text-sm text-blue-600 hover:text-blue-800">
-          ← Back to Recipes
+        <Link href="/recipes" className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+          &larr; Back to Recipes
         </Link>
-        <h2 className="text-lg font-semibold text-gray-800">{product.name}</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{product.name}</h2>
       </div>
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <ProductForm
           initialProduct={product}
           onSaved={handleSaved}

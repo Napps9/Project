@@ -6,15 +6,15 @@ interface ScoreBadgeProps {
 export default function ScoreBadge({ isHfss, score }: ScoreBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm text-xs font-medium tracking-wide uppercase ${
         isHfss
-          ? 'bg-red-100 text-red-800 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
-          : 'bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+          ? 'bg-accent-50 text-accent border border-accent/30 dark:bg-accent/10 dark:text-accent-50 dark:border-accent/20'
+          : 'bg-positive/10 text-positive border border-positive/30 dark:bg-positive/10 dark:text-positive-400 dark:border-positive/20'
       }`}
     >
-      <span className={`w-2 h-2 rounded-full ${isHfss ? 'bg-red-500' : 'bg-green-500'}`} />
-      {isHfss ? 'HFSS — Less Healthy' : 'Healthier'}
-      <span className="ml-1 text-xs opacity-70">({score})</span>
+      <span className={`w-1.5 h-1.5 ${isHfss ? 'bg-accent' : 'bg-positive'}`} />
+      {isHfss ? 'HFSS' : 'Healthier'}
+      <span className="font-mono tabular-nums opacity-70">({score})</span>
     </span>
   );
 }

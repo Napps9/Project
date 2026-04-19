@@ -35,13 +35,13 @@ export default function RecipeDetailPage() {
 
   if (!loaded) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
-        <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+      <div className="border border-zinc-300 dark:border-zinc-700 p-8 text-center">
+        <div className="inline-flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
           <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          Loading recipe...
+          Loading&hellip;
         </div>
       </div>
     );
@@ -49,14 +49,14 @@ export default function RecipeDetailPage() {
 
   if (!product) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
-        <p className="text-lg font-medium text-gray-700 dark:text-gray-300">Recipe not found</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-          This recipe may have been deleted, or the link is incorrect.
+      <div className="border border-zinc-300 dark:border-zinc-700 p-8 text-center">
+        <p className="text-lg font-medium text-zinc-700 dark:text-zinc-300">Recipe not found</p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">
+          This recipe may have been deleted.
         </p>
         <Link
           href="/recipes"
-          className="inline-block mt-4 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+          className="inline-block mt-4 text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
         >
           &larr; Back to Recipes
         </Link>
@@ -67,12 +67,12 @@ export default function RecipeDetailPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Link href="/recipes" className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+        <Link href="/recipes" className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
           &larr; Back to Recipes
         </Link>
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{product.name}</h2>
+        <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{product.name}</h2>
       </div>
-      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 p-6">
         <ProductForm
           initialProduct={product}
           onSaved={handleSaved}

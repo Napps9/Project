@@ -104,7 +104,7 @@ export default function AppHeader() {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
+    <header className="bg-white dark:bg-zinc-900 border-b border-zinc-300 dark:border-zinc-700 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between relative">
         <button
           onClick={() => setMenuOpen(!menuOpen)}
@@ -113,23 +113,23 @@ export default function AppHeader() {
           aria-haspopup="dialog"
         >
           <div className="min-w-0">
-            <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+            <h1 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white truncate">
               UK NPM Food Scoring
             </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-              Nutrient Profiling Model (2004/2005)
+            <p className="text-[10px] uppercase tracking-instrument text-zinc-400 dark:text-zinc-500 hidden sm:block">
+              Nutrient Profiling Model 2004/2005
             </p>
           </div>
           <svg
-            width="16"
-            height="16"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={`text-gray-400 dark:text-gray-500 transition-transform duration-200 flex-shrink-0 ${menuOpen ? 'rotate-180' : ''}`}
+            className={`text-zinc-400 dark:text-zinc-500 transition-transform duration-200 flex-shrink-0 ${menuOpen ? 'rotate-180' : ''}`}
           >
             <polyline points="6 9 12 15 18 9" />
           </svg>
@@ -143,35 +143,32 @@ export default function AppHeader() {
             @keyframes cmdMenuIn { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: translateY(0) } }
           `}</style>
 
-          {/* Backdrop */}
           <div
             onClick={closeMenu}
-            className="fixed inset-0 z-[60] bg-black/40 dark:bg-black/60"
+            className="fixed inset-0 z-[60] bg-black/50 dark:bg-black/70"
             style={{ animation: 'cmdBackdropIn 150ms ease-out' }}
             aria-hidden="true"
           />
 
-          {/* Panel */}
           <div
             role="dialog"
             aria-label="Navigation menu"
-            className="fixed inset-x-0 top-[49px] bottom-0 z-[70] bg-white dark:bg-gray-900 overflow-y-auto
-              sm:absolute sm:top-full sm:bottom-auto sm:max-h-[80vh] sm:inset-x-0 sm:max-w-xl sm:mx-auto sm:rounded-xl sm:shadow-2xl sm:border sm:border-gray-200 sm:dark:border-gray-700 sm:mt-2"
+            className="fixed inset-x-0 top-[49px] bottom-0 z-[70] bg-white dark:bg-zinc-900 overflow-y-auto
+              sm:absolute sm:top-full sm:bottom-auto sm:max-h-[80vh] sm:inset-x-0 sm:max-w-xl sm:mx-auto sm:border sm:border-zinc-300 sm:dark:border-zinc-600 sm:mt-1"
             style={{ animation: 'cmdMenuIn 200ms ease-out' }}
           >
-            {/* Search */}
-            <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-3 sm:p-4 border-b border-zinc-200 dark:border-zinc-700">
               <div className="relative">
                 <svg
-                  width="16"
-                  height="16"
+                  width="14"
+                  height="14"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500"
                 >
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -183,44 +180,42 @@ export default function AppHeader() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Jump to a product..."
                   aria-label="Search products"
-                  className="w-full pl-10 pr-4 py-2.5 text-base sm:text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                  className="w-full pl-9 pr-4 py-2.5 text-base sm:text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
                 />
               </div>
             </div>
 
-            {/* Nav cards */}
             <div className="grid grid-cols-3 gap-2 sm:gap-3 p-3 sm:p-4">
               {navCards.map((card) => (
                 <Link
                   key={card.href}
                   href={card.href}
                   onClick={closeMenu}
-                  className={`flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all ${
+                  className={`flex flex-col items-center gap-2 p-3 sm:p-4 border transition-colors ${
                     isActive(card.href)
-                      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-300'
-                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/50 active:bg-gray-100 dark:active:bg-gray-700'
+                      ? 'border-accent bg-accent-50 text-accent dark:bg-accent/10 dark:border-accent dark:text-accent-50'
+                      : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                   }`}
                 >
-                  <div className={`w-10 h-10 flex items-center justify-center rounded-lg shadow-sm ${
+                  <div className={`w-10 h-10 flex items-center justify-center rounded-sm ${
                     isActive(card.href)
-                      ? 'bg-blue-100 dark:bg-blue-800/40'
-                      : 'bg-white dark:bg-gray-900'
+                      ? 'bg-accent/10 dark:bg-accent/20'
+                      : 'bg-white dark:bg-zinc-900'
                   }`}>
                     {card.icon}
                   </div>
-                  <span className="text-sm font-medium">{card.label}</span>
+                  <span className="text-xs font-medium uppercase tracking-instrument">{card.label}</span>
                 </Link>
               ))}
             </div>
 
-            {/* Recent / matching products */}
             <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+              <h3 className="text-[10px] font-medium uppercase tracking-instrument text-zinc-400 dark:text-zinc-500 mb-2">
                 {searchQuery.trim() ? 'Matching Products' : 'Recent Products'}
               </h3>
               {displayProducts.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">
-                  {searchQuery.trim() ? 'No products match your search.' : 'No saved products yet.'}
+                <p className="text-sm text-zinc-400 dark:text-zinc-500 py-4 text-center">
+                  {searchQuery.trim() ? 'No products match.' : 'No saved products yet.'}
                 </p>
               ) : (
                 <div className="space-y-0.5">
@@ -228,23 +223,23 @@ export default function AppHeader() {
                     <button
                       key={product.id}
                       onClick={() => handleProductClick(product)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-700 transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 active:bg-zinc-100 dark:active:bg-zinc-800 transition-colors"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
                           {product.name}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs font-medium ${
                           product.result.isHfss
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                            : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                            ? 'bg-accent-50 text-accent dark:bg-accent/10 dark:text-accent-50'
+                            : 'bg-positive/10 text-positive dark:text-positive-400'
                         }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${product.result.isHfss ? 'bg-red-500' : 'bg-green-500'}`} />
+                          <span className={`w-1.5 h-1.5 ${product.result.isHfss ? 'bg-accent' : 'bg-positive'}`} />
                           {product.result.isHfss ? 'HFSS' : 'OK'}
                         </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 font-mono tabular-nums w-6 text-right">
+                        <span className="text-xs text-zinc-400 dark:text-zinc-500 font-mono tabular-nums w-6 text-right">
                           {product.result.totalScore}
                         </span>
                       </div>
@@ -254,13 +249,12 @@ export default function AppHeader() {
               )}
             </div>
 
-            {/* Settings */}
-            <div className="px-3 sm:px-4 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
+            <div className="px-3 sm:px-4 py-3 sm:py-4 border-t border-zinc-200 dark:border-zinc-700">
+              <h3 className="text-[10px] font-medium uppercase tracking-instrument text-zinc-400 dark:text-zinc-500 mb-3">
                 Settings
               </h3>
               <div className="flex items-center justify-between px-3 py-1">
-                <span className="text-sm text-gray-700 dark:text-gray-300">Theme</span>
+                <span className="text-sm text-zinc-700 dark:text-zinc-300">Theme</span>
                 <ThemeToggle />
               </div>
             </div>

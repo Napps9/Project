@@ -143,12 +143,12 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
           onChange={(e) => setRawText(e.target.value)}
           placeholder="Paste ingredients list here, e.g.: tomatoes (40%), sugar, wheat flour, olive oil, garlic, salt, xanthan gum"
           rows={4}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder:text-gray-400 dark:placeholder:text-gray-500"
+          className="w-full border border-zinc-300 dark:border-zinc-600 rounded-sm px-3 py-2 text-sm bg-white dark:bg-zinc-800 dark:text-zinc-100 resize-y focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
         />
         <button
           onClick={handleParse}
           disabled={loading || !rawText.trim()}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-700 disabled:opacity-50 text-sm font-medium transition-colors"
         >
           {loading && (
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -164,31 +164,31 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2.5 border border-gray-100 dark:border-gray-700/50">
+      <div className="flex flex-col gap-1.5 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2.5 border border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center justify-between">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className={`text-xs font-medium ${Math.abs(totalProportion - 100) < 0.1 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+            <span className={`text-xs font-mono tabular-nums font-medium ${Math.abs(totalProportion - 100) < 0.1 ? 'text-positive dark:text-positive-400' : 'text-amber-600 dark:text-amber-400'}`}>
               Total: {totalProportion.toFixed(1)}%
             </span>
             {unknownCount > 0 && (
               <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                {unknownCount} unknown ingredient{unknownCount > 1 ? 's' : ''} — verify
+                {unknownCount} unknown ingredient{unknownCount > 1 ? 's' : ''}
               </span>
             )}
           </div>
-          <button onClick={handleReEnter} className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors flex-shrink-0 ml-2">
+          <button onClick={handleReEnter} className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors flex-shrink-0 ml-2">
             Re-enter
           </button>
         </div>
         {hasValid && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-mono tabular-nums text-zinc-500 dark:text-zinc-400">
             <span>FVN: {liveBreakdown.standardFvn.toFixed(1)}%</span>
-            <span className="text-gray-300 dark:text-gray-600">&middot;</span>
+            <span className="text-zinc-300 dark:text-zinc-600">&middot;</span>
             <span>Dried: {liveBreakdown.driedAndConcentrated.toFixed(1)}%</span>
-            <span className="text-gray-300 dark:text-gray-600">&middot;</span>
+            <span className="text-zinc-300 dark:text-zinc-600">&middot;</span>
             <span>Other: {liveBreakdown.other.toFixed(1)}%</span>
-            <span className="text-gray-300 dark:text-gray-600">&middot;</span>
-            <span className="font-medium text-gray-700 dark:text-gray-300">Effective: {liveFvnPct.toFixed(1)}%</span>
+            <span className="text-zinc-300 dark:text-zinc-600">&middot;</span>
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">Effective: {liveFvnPct.toFixed(1)}%</span>
           </div>
         )}
       </div>
@@ -197,29 +197,27 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
         {ingredients.map((ing, i) => {
           const effectiveFvn = isEffectivelyFvn(ing);
           return (
-            <div key={i} className="rounded-lg border border-gray-100 dark:border-gray-800 p-2 sm:p-0 sm:border-0 sm:rounded-none">
-              {/* Row 1: index, name, proportion, delete */}
+            <div key={i} className="border border-zinc-100 dark:border-zinc-800 p-2 sm:p-0 sm:border-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="text-xs text-gray-400 dark:text-gray-500 w-5 flex-shrink-0">{i + 1}.</span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500 w-5 flex-shrink-0 font-mono tabular-nums">{i + 1}.</span>
                 <input
                   type="text"
                   value={ing.name}
                   onChange={(e) => updateIngredient(i, { name: e.target.value })}
-                  className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                  className="flex-1 min-w-0 border border-zinc-300 dark:border-zinc-600 rounded-sm px-2 py-1.5 text-sm bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
                 />
                 <input
                   type="number"
                   value={ing.proportion || ''}
                   onChange={(e) => updateIngredient(i, { proportion: parseFloat(e.target.value) || 0 })}
-                  className="w-16 sm:w-20 border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm text-right bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow flex-shrink-0"
+                  className="w-16 sm:w-20 border border-zinc-300 dark:border-zinc-600 rounded-sm px-2 py-1.5 text-sm text-right font-mono tabular-nums bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors flex-shrink-0"
                   min={0}
                   max={100}
                   step={0.1}
                   placeholder="%"
                 />
-                <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">%</span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500 hidden sm:inline">%</span>
 
-                {/* Desktop-only: inline FVN controls */}
                 <div className="hidden sm:contents">
                   {ing.name.trim() && (
                     effectiveFvn ? (
@@ -227,7 +225,7 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
                         <select
                           value={ing.category !== 'none' ? ing.category : 'fruit'}
                           onChange={(e) => handleCategoryChange(i, e.target.value)}
-                          className="text-xs border border-green-300 dark:border-green-700 rounded px-1 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 focus:outline-none focus:ring-1 focus:ring-green-500"
+                          className="text-xs border border-positive/30 rounded-sm px-1 py-0.5 bg-positive/5 text-positive dark:text-positive-400 focus:outline-none focus:ring-1 focus:ring-positive"
                           aria-label={`FVN category for ${ing.name}`}
                         >
                           <option value="fruit">Fruit</option>
@@ -239,11 +237,11 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
                           <select
                             value={ing.form === 'dried' ? 'dried' : 'fresh'}
                             onChange={(e) => handleFormChange(i, e.target.value)}
-                            className="text-xs border border-green-300 dark:border-green-700 rounded px-1 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            className="text-xs border border-positive/30 rounded-sm px-1 py-0.5 bg-positive/5 text-positive dark:text-positive-400 focus:outline-none focus:ring-1 focus:ring-positive"
                             aria-label={`Scoring form for ${ing.name}`}
                           >
                             <option value="fresh">fresh</option>
-                            <option value="dried">dried ×2</option>
+                            <option value="dried">dried &times;2</option>
                           </select>
                         )}
                       </div>
@@ -256,10 +254,10 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
                     <div className="flex items-center gap-0.5">
                       <button
                         onClick={() => handleThumbsUp(i)}
-                        className={`p-1.5 rounded transition-colors ${
+                        className={`p-1.5 rounded-sm transition-colors ${
                           effectiveFvn
-                            ? 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/30'
-                            : 'text-gray-300 hover:text-green-500 dark:text-gray-600 dark:hover:text-green-400'
+                            ? 'text-positive bg-positive/10 dark:text-positive-400'
+                            : 'text-zinc-300 hover:text-positive dark:text-zinc-600 dark:hover:text-positive-400'
                         }`}
                         aria-label={effectiveFvn ? `${ing.name} counted as FVN` : `Mark ${ing.name} as FVN`}
                       >
@@ -267,10 +265,10 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
                       </button>
                       <button
                         onClick={() => handleThumbsDown(i)}
-                        className={`p-1.5 rounded transition-colors ${
+                        className={`p-1.5 rounded-sm transition-colors ${
                           !effectiveFvn
-                            ? 'text-red-500 bg-red-50 dark:text-red-400 dark:bg-red-900/30'
-                            : 'text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400'
+                            ? 'text-accent bg-accent/10'
+                            : 'text-zinc-300 hover:text-accent dark:text-zinc-600 dark:hover:text-accent'
                         }`}
                         aria-label={effectiveFvn ? `Exclude ${ing.name} from FVN` : `${ing.name} not counted as FVN`}
                       >
@@ -282,7 +280,7 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
 
                 <button
                   onClick={() => removeIngredient(i)}
-                  className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-2 sm:p-1.5 transition-colors flex-shrink-0"
+                  className="text-zinc-300 hover:text-accent dark:text-zinc-600 dark:hover:text-accent p-2 sm:p-1.5 transition-colors flex-shrink-0"
                   aria-label={`Remove ${ing.name || 'ingredient'}`}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -292,7 +290,6 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
                 </button>
               </div>
 
-              {/* Row 2 (mobile only): FVN controls */}
               {ing.name.trim() && (
                 <div className="flex items-center gap-1.5 mt-1.5 ml-6 sm:hidden">
                   {effectiveFvn ? (
@@ -300,7 +297,7 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
                       <select
                         value={ing.category !== 'none' ? ing.category : 'fruit'}
                         onChange={(e) => handleCategoryChange(i, e.target.value)}
-                        className="text-xs border border-green-300 dark:border-green-700 rounded px-1.5 py-1 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        className="text-xs border border-positive/30 rounded-sm px-1.5 py-1 bg-positive/5 text-positive dark:text-positive-400 focus:outline-none focus:ring-1 focus:ring-positive"
                         aria-label={`FVN category for ${ing.name}`}
                       >
                         <option value="fruit">Fruit</option>
@@ -312,11 +309,11 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
                         <select
                           value={ing.form === 'dried' ? 'dried' : 'fresh'}
                           onChange={(e) => handleFormChange(i, e.target.value)}
-                          className="text-xs border border-green-300 dark:border-green-700 rounded px-1.5 py-1 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 focus:outline-none focus:ring-1 focus:ring-green-500"
+                          className="text-xs border border-positive/30 rounded-sm px-1.5 py-1 bg-positive/5 text-positive dark:text-positive-400 focus:outline-none focus:ring-1 focus:ring-positive"
                           aria-label={`Scoring form for ${ing.name}`}
                         >
                           <option value="fresh">fresh</option>
-                          <option value="dried">dried ×2</option>
+                          <option value="dried">dried &times;2</option>
                         </select>
                       )}
                     </div>
@@ -329,10 +326,10 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
                   <div className="flex items-center gap-0.5">
                     <button
                       onClick={() => handleThumbsUp(i)}
-                      className={`p-2 rounded transition-colors ${
+                      className={`p-2 rounded-sm transition-colors ${
                         effectiveFvn
-                          ? 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/30'
-                          : 'text-gray-300 hover:text-green-500 dark:text-gray-600 dark:hover:text-green-400'
+                          ? 'text-positive bg-positive/10 dark:text-positive-400'
+                          : 'text-zinc-300 hover:text-positive dark:text-zinc-600 dark:hover:text-positive-400'
                       }`}
                       aria-label={effectiveFvn ? `${ing.name} counted as FVN` : `Mark ${ing.name} as FVN`}
                     >
@@ -340,10 +337,10 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
                     </button>
                     <button
                       onClick={() => handleThumbsDown(i)}
-                      className={`p-2 rounded transition-colors ${
+                      className={`p-2 rounded-sm transition-colors ${
                         !effectiveFvn
-                          ? 'text-red-500 bg-red-50 dark:text-red-400 dark:bg-red-900/30'
-                          : 'text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400'
+                          ? 'text-accent bg-accent/10'
+                          : 'text-zinc-300 hover:text-accent dark:text-zinc-600 dark:hover:text-accent'
                       }`}
                       aria-label={effectiveFvn ? `Exclude ${ing.name} from FVN` : `${ing.name} not counted as FVN`}
                     >
@@ -357,7 +354,7 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
         })}
       </div>
 
-      <button onClick={addIngredient} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors py-1">
+      <button onClick={addIngredient} className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors py-1">
         + Add ingredient
       </button>
     </div>
@@ -367,14 +364,14 @@ export default function IngredientPasteInput({ ingredients, onChange }: Props) {
 function NonFvnBadge({ ingredient }: { ingredient: ParsedIngredientState }) {
   if (ingredient.isFvn && ingredient.form === 'excluded') {
     return (
-      <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" title="Processed form excluded per UK NPM guidance">
+      <span className="text-xs px-1.5 py-0.5 rounded-sm bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" title="Processed form excluded per UK NPM guidance">
         excluded
       </span>
     );
   }
   if (ingredient.isFvn && ingredient.userVote === 'down') {
     return (
-      <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 line-through">
+      <span className="text-xs px-1.5 py-0.5 rounded-sm bg-accent/10 text-accent line-through">
         FVN ({ingredient.category})
       </span>
     );
@@ -382,13 +379,13 @@ function NonFvnBadge({ ingredient }: { ingredient: ParsedIngredientState }) {
   switch (ingredient.recognition) {
     case 'recognized_non_fvn':
       return (
-        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+        <span className="text-xs px-1.5 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400">
           non-FVN
         </span>
       );
     case 'unrecognized':
       return (
-        <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium">
+        <span className="text-xs px-1.5 py-0.5 rounded-sm bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium">
           Unknown
         </span>
       );

@@ -98,25 +98,25 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer">
           <input
             type="checkbox"
             checked={isDrink}
             onChange={(e) => setIsDrink(e.target.checked)}
-            className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+            className="rounded-sm border-zinc-300 dark:border-zinc-600 text-accent focus:ring-accent"
           />
           This is a drink
         </label>
         <button
           onClick={handleReset}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+          className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
         >
           New Product
         </button>
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Nutrition per 100g</h3>
+        <h3 className="text-xs font-medium uppercase tracking-instrument text-zinc-500 dark:text-zinc-400 mb-3">Nutrition per 100g</h3>
 
         <div className="mb-4">
           <textarea
@@ -124,20 +124,20 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
             onChange={(e) => setNutritionText(e.target.value)}
             placeholder="Paste nutrition information here (e.g. Energy: 1500kJ, Sat Fat: 4g, Sugars: 15g, Salt: 1.2g, Fibre: 3g, Protein: 5g)"
             rows={3}
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 resize-y mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            className="w-full border border-zinc-300 dark:border-zinc-600 rounded-sm px-3 py-2 text-sm bg-white dark:bg-zinc-800 dark:text-zinc-100 resize-y mb-2 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
           />
           <div className="flex items-center gap-3">
             <button
               onClick={handleParseNutrition}
               disabled={!nutritionText.trim()}
-              className="px-3 py-1.5 bg-gray-700 dark:bg-gray-600 text-white rounded-md hover:bg-gray-800 dark:hover:bg-gray-500 disabled:opacity-50 text-xs font-medium transition-colors"
+              className="px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-sm hover:bg-zinc-800 dark:hover:bg-white disabled:opacity-50 text-xs font-medium transition-colors"
             >
               Parse Nutrition
             </button>
             {parseInfo && (
               <div className="text-xs">
                 {parseInfo.found.length > 0 && (
-                  <span className="text-green-600 dark:text-green-400">Found: {parseInfo.found.join(', ')}</span>
+                  <span className="text-positive dark:text-positive-400">Found: {parseInfo.found.join(', ')}</span>
                 )}
                 {parseInfo.notFound.length > 0 && (
                   <span className="text-amber-600 dark:text-amber-400 ml-2">Not found: {parseInfo.notFound.join(', ')}</span>
@@ -158,9 +158,9 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+        <h3 className="text-xs font-medium uppercase tracking-instrument text-zinc-500 dark:text-zinc-400 mb-3">
           Ingredients
-          <span className="font-normal text-gray-400 dark:text-gray-500 ml-1">(paste comma-separated list for automatic FVN classification)</span>
+          <span className="normal-case tracking-normal font-normal text-zinc-400 dark:text-zinc-500 ml-1">(paste comma-separated list for automatic FVN classification)</span>
         </h3>
         <IngredientPasteInput
           key={resetKey}
@@ -170,7 +170,7 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
+        <div className="flex items-center gap-2 text-sm text-accent bg-accent-50 dark:bg-accent/10 border border-accent/30 px-4 py-3">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
@@ -184,7 +184,7 @@ export default function ProductForm({ initialProduct, onSaved, onNewProduct }: P
         <button
           onClick={handleScore}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-sm hover:bg-accent-700 disabled:opacity-50 text-sm font-medium transition-colors"
         >
           {loading && (
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -226,12 +226,12 @@ function NutrientField({
 }) {
   return (
     <div>
-      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</label>
+      <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1 font-mono">{label}</label>
       <input
         type="number"
         value={value || ''}
         onChange={(e) => onChange(field, e.target.value)}
-        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+        className="w-full border border-zinc-300 dark:border-zinc-600 rounded-sm px-2 py-1.5 text-sm font-mono tabular-nums bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
         min={0}
         step={0.1}
       />

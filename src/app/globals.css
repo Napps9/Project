@@ -4,14 +4,47 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100;
+    @apply bg-zinc-50 text-zinc-900 antialiased;
+  }
+  .dark body,
+  body.dark {
+    @apply bg-zinc-950 text-zinc-100;
+  }
+
+  ::selection {
+    @apply bg-accent/20 text-accent-700;
+  }
+  .dark ::selection {
+    @apply bg-accent/30 text-accent-50;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
   }
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-
-.animate-spin {
-  animation: spin 1s linear infinite;
+@keyframes cmdIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes gauge-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.animate-spin { animation: spin 1s linear infinite; }
+.animate-cmd-in { animation: cmdIn 150ms ease-out; }
+.animate-fade-in { animation: fadeIn 120ms ease-out; }
+.animate-gauge { animation: gauge-fill 400ms cubic-bezier(0.25, 0, 0.2, 1); transform-origin: left; }

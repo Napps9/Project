@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import AppHeader from '@/components/AppHeader';
 import './globals.css';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: 'UK NPM Food Scoring',
@@ -9,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -17,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
+      <body className="min-h-screen font-sans">
         <AppHeader />
         <main className="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-8">
           {children}

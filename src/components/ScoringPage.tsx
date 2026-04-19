@@ -24,8 +24,8 @@ export default function ScoringPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-8">
       <div className="flex-1 min-w-0">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Score a Product</h2>
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        <h2 className="text-xs font-medium uppercase tracking-instrument text-zinc-500 dark:text-zinc-400 mb-4">Score a Product</h2>
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 p-6">
           <ProductForm
             initialProduct={selectedProduct}
             onSaved={handleSaved}
@@ -35,8 +35,8 @@ export default function ScoringPage() {
       </div>
 
       <div className="w-full lg:w-80 flex-shrink-0">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Saved Products</h2>
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm max-h-[60vh] lg:max-h-none overflow-y-auto">
+        <h2 className="text-xs font-medium uppercase tracking-instrument text-zinc-500 dark:text-zinc-400 mb-4">Saved Products</h2>
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 p-4 max-h-[60vh] lg:max-h-none overflow-y-auto">
           <ProductHistory
             refreshKey={refreshKey}
             selectedId={selectedProduct?.id ?? null}

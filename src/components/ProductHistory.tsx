@@ -29,29 +29,29 @@ export default function ProductHistory({ refreshKey, selectedId, onSelect, onDes
 
   if (products.length === 0) {
     return (
-      <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
-        No saved products yet. Score a product and save it to see it here.
+      <p className="text-sm text-zinc-400 dark:text-zinc-500 text-center py-8">
+        No saved products yet.
       </p>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {products.map((p) => (
         <div
           key={p.id}
           onClick={() => onSelect(p)}
-          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+          className={`flex items-center justify-between p-3 border cursor-pointer transition-colors ${
             selectedId === p.id
-              ? 'border-blue-400 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/20'
-              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:border-gray-600 dark:hover:bg-gray-800'
+              ? 'border-accent bg-accent-50/50 dark:border-accent dark:bg-accent/5'
+              : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-600 dark:hover:bg-zinc-800'
           }`}
         >
           <div className="min-w-0 flex-1">
-            <div className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{p.name}</div>
+            <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100 truncate">{p.name}</div>
             <div className="flex items-center gap-2 mt-1">
               <ScoreBadge isHfss={p.result.isHfss} score={p.result.totalScore} />
-              <span className="text-xs text-gray-400 dark:text-gray-500">
+              <span className="text-xs text-zinc-400 dark:text-zinc-500 font-mono tabular-nums">
                 {new Date(p.savedAt).toLocaleDateString()}
               </span>
             </div>
@@ -61,7 +61,7 @@ export default function ProductHistory({ refreshKey, selectedId, onSelect, onDes
               e.stopPropagation();
               handleDelete(p.id);
             }}
-            className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 text-sm ml-2 p-1 transition-colors"
+            className="text-zinc-300 hover:text-accent dark:text-zinc-600 dark:hover:text-accent text-sm ml-2 p-1 transition-colors"
             aria-label={`Delete ${p.name}`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
